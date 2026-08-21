@@ -1,0 +1,10 @@
+appId: com.sponsays.preview
+name: Recommendation rejection and reroll
+---
+- launchApp:
+    clearState: true
+- tapOn: 'Skip and try the demo'
+- tapOn: 'SPONSAY ME'
+- assertVisible: 'Not feeling it'
+- tapOn: 'Not feeling it'
+- assertVisible: "LET'S GO"

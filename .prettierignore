@@ -1,0 +1,10 @@
+.expo
+node_modules
+coverage
+dist
+pnpm-lock.yaml
+supabase/.temp
+assets
+scripts/reset-project.js
+SPONSAYS_MVP_BUILD_PROMPT.md
+.env.example

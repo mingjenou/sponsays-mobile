@@ -1,0 +1,14 @@
+appId: com.sponsays.preview
+name: P0 guest recommendation journey
+---
+- launchApp:
+    clearState: true
+- assertVisible: 'Stop deciding.*'
+- tapOn: 'Skip and try the demo'
+- assertVisible: 'What are we doing?'
+- tapOn: 'SPONSAY ME ✦'
+- assertVisible: 'SponSays says…'
+- tapOn: "LET'S GO"
+- assertVisible: 'OPEN DIRECTIONS'
+- tapOn: '👍 Yes'
+- assertVisible: 'Got it — thanks.'

@@ -1,0 +1,1 @@
+export const MAX_REPLACEMENTS_PER_SESSION = 3;

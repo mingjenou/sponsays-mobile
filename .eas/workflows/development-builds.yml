@@ -1,0 +1,18 @@
+name: Development builds
+
+on:
+  workflow_dispatch:
+
+jobs:
+  build_android:
+    type: build
+    environment: development
+    params:
+      platform: android
+      profile: development
+  build_ios:
+    type: build
+    environment: development
+    params:
+      platform: ios
+      profile: development
