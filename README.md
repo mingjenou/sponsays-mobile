@@ -2,7 +2,7 @@
 
 SponSays is a mobile decision service: give it a little context, receive one useful recommendation, and go do it. It is intentionally not a directory or an endless list of nearby places.
 
-This repository currently contains **Milestone 1 — the Expo QR prototype**. It uses curated Adelaide demo data and works without accounts, API keys, Supabase, Google Places or OpenAI.
+This repository contains the Expo QR prototype plus an optional Supabase account foundation. It uses curated Adelaide demo data and still works without an account, an `.env` file, or any external service credentials.
 
 ## RUN SPONSAYS ON YOUR PHONE
 
@@ -85,34 +85,51 @@ npm run lint
 npx expo start
 ```
 
-There is no test framework in Milestone 1; the local recommendation engine gets focused automated tests before real-data rollout.
+There is no test framework in the current prototype; the local recommendation engine gets focused automated tests before real-data rollout.
 
 ## Project map
 
 ```text
 app/                         Expo Router screens and navigation
-  (auth)/                    Welcome and lightweight demo onboarding
+  (auth)/                    Welcome, demo onboarding and optional email auth
   (tabs)/                    Do, Around Me, Memories and Me
   recommendation/[id].tsx    Accepted recommendation action view
 src/
   components/                Reusable UI pieces
+  features/auth/             Optional Supabase authentication boundary
   features/recommendations/  Credential-free recommendation rules
   mocks/                     Curated Adelaide demo places
   theme/                     Brand colours, spacing and typography
   types/                     Shared domain types
+  services/supabase/         Safe client configuration and database types
 docs/                        Architecture, product and testing notes
+supabase/                    Database migrations and setup documentation
 ```
+
+## OPTIONAL SUPABASE SETUP
+
+No setup is required to run or test the SponSays demo. When Supabase is absent, the app leaves account controls optional and continues through the same Adelaide mock journey.
+
+For future real-account testing, create a local `.env` file in the repository root. Do not commit it. It should contain only the mobile-safe project settings supplied by Supabase:
+
+```text
+EXPO_PUBLIC_APP_MODE=mock
+EXPO_PUBLIC_SUPABASE_URL=
+EXPO_PUBLIC_SUPABASE_PUBLISHABLE_KEY=
+```
+
+Leave the values blank until a project is ready. Restart Expo after changing environment variables. The database migration and founder-friendly application instructions are documented in `supabase/README.md`.
 
 ## Configuration and secrets
 
-Milestone 1 needs no `.env` file. `.env.example` documents future variable names without real keys.
+The demo needs no `.env` file. `.env.example` contains blank placeholders only, while `.gitignore` keeps local environment files out of version control.
 
 Never place an OpenAI key, Google server key or Supabase service-role key in an `EXPO_PUBLIC_` variable. Those secrets must stay on a server in later milestones.
 
 ## Current milestone
 
-- Milestone 0: complete
-- Milestone 1: implemented and locally verified
-- Milestone 2 (Supabase): intentionally not started
+- Milestones 0 and 1: implemented and physically verified in Expo Go
+- Task 3A: optional Supabase client, email-auth boundary, database schema and RLS foundation
+- Recommendation persistence: intentionally not connected
 
-The next step is founder testing in Expo Go on a physical phone. Do not add external services until that test is confirmed.
+The default remains the local demo. Google Places, OpenAI, analytics and automatic recommendation persistence are intentionally not part of this foundation.

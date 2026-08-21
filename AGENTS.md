@@ -10,7 +10,7 @@ Never redesign SponSays into a directory, list-first marketplace, travel browser
 
 ## Current milestone
 
-Milestones 0 and 1 are implemented: an Expo Go-compatible, credential-free Adelaide prototype. Stop before Supabase, location, Google Places, PostHog, Sentry or OpenAI until the founder confirms the physical-phone QR test works.
+Milestones 0 and 1 are implemented and physically verified in Expo Go. Task 3A adds an optional Supabase client, Auth boundary, database migration and RLS foundation. The credential-free Adelaide demo remains the default; recommendation persistence is not connected yet.
 
 ## Stack and architecture
 
@@ -81,6 +81,18 @@ Do not scatter hard-coded design values through screens. Extend the theme tokens
 Never commit secrets, passwords, auth tokens or private keys. Never use the Supabase service-role key, OpenAI key or unrestricted Google server key in the mobile client. Only mobile-safe values may use the `EXPO_PUBLIC_` prefix. Keep `.env` ignored.
 
 Supabase Auth will own future identities. Future user tables must reference `auth.users.id`, use UUIDs and enable Row Level Security.
+
+## Task 3 Supabase rules
+
+- Supabase Auth owns user identity.
+- Public user tables reference `auth.users.id`.
+- Row Level Security is mandatory on every user-data table.
+- The mobile client uses the publishable key only.
+- The service-role key is server-only and must never enter Expo code or client environment files.
+- Demo mode must remain operational without Supabase.
+- Never weaken RLS for debugging.
+- Do not add OpenAI or Google Places yet.
+- Do not persist demo recommendations until connection verification is explicitly authorized.
 
 ## Prohibited scope expansion
 

@@ -1,0 +1,2 @@
+-- Intentionally empty for Task 3A.
+-- The existing Adelaide demo data remains local and is not persisted to Supabase yet.
