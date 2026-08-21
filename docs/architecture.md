@@ -69,3 +69,21 @@ Copying the reference as a fully browsable map was rejected because it would con
 
 **Future implication**  
 Real map and photo data can replace the current code-native demo illustrations without changing the screens’ information architecture.
+
+## ADR-006 — Optional Supabase boundary with database-enforced ownership
+
+**Decision**
+
+Add Supabase as an optional service behind a typed client and Auth provider. Keep the client uninitialized when public settings are absent, and enforce all account-data ownership with Row Level Security in the database.
+
+**Reason**
+
+The physically verified demo must remain credential-free while the project gains a secure path to real accounts. Database policies protect data even if a modified client submits another user's identifier.
+
+**Alternative considered**
+
+Making authentication mandatory or trusting client-side ownership checks would either break demo mode or create an avoidable security weakness.
+
+**Future implication**
+
+After a project is linked and the schema is applied, database types should be regenerated with the Supabase CLI. Recommendation persistence remains a separate, explicitly authorized milestone.

@@ -39,7 +39,14 @@ export default function WelcomeScreen() {
 
         <View style={styles.actions}>
           <PrimaryButton label="SHOW ME HOW" onPress={() => router.push('/(auth)/onboarding')} />
-          <TextButton label="Try SponSays without an account" onPress={() => router.replace('/(tabs)/do')} />
+<TextButton
+  label="Sign in or create an account"
+  onPress={() => router.push('/(auth)/sign-in')}
+/>
+<TextButton
+  label="Try SponSays without an account"
+  onPress={() => router.replace('/(tabs)/do')}
+/>
         </View>
       </View>
     </SafeAreaView>
