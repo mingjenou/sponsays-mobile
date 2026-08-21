@@ -12,21 +12,16 @@ export default function MemoriesScreen() {
       <BrandMark compact />
       <View style={styles.heading}>
         <SectionHeader
-          eyebrow="YOUR SPONSAYS"
-          title="Good calls, kept simple."
-          description="Things you chose to do — not places you spent an hour comparing."
+          eyebrow="THINGS SPONSAYS GOT YOU TO DO"
+          title="Your SponSays"
+          description="Good calls you accepted, remembered without turning them into another list to manage."
         />
       </View>
 
       <View style={styles.summary}>
-        <View>
-          <Text style={styles.summaryNumber}>{SAMPLE_MEMORIES.length}</Text>
-          <Text style={styles.summaryLabel}>demo memories</Text>
-        </View>
-        <View style={styles.summaryDivider} />
-        <View>
-          <Text style={styles.summaryNumber}>100%</Text>
-          <Text style={styles.summaryLabel}>good calls</Text>
+        <View style={styles.summaryCopy}>
+          <Text style={styles.summaryNumber}>{SAMPLE_MEMORIES.length} new places tried</Text>
+          <Text style={styles.summaryLabel}>A small demo history of accepted SponSays.</Text>
         </View>
         <View style={styles.summarySpark}>
           <Text style={styles.summarySparkText}>✦</Text>
@@ -61,16 +56,16 @@ export default function MemoriesScreen() {
 
 const styles = StyleSheet.create({
   heading: { marginTop: spacing.xxl },
-  summary: { flexDirection: 'row', alignItems: 'center', marginTop: spacing.xl, padding: spacing.lg, backgroundColor: colors.yellowSoft, borderRadius: radius.xl, gap: spacing.lg },
+  summary: { flexDirection: 'row', alignItems: 'center', marginTop: spacing.xl, padding: spacing.lg, backgroundColor: colors.creamDeep, borderRadius: radius.xl, gap: spacing.lg },
+  summaryCopy: { flex: 1, gap: spacing.xxs },
   summaryNumber: { ...typography.heading2, color: colors.charcoal },
   summaryLabel: { ...typography.caption, color: colors.charcoalSoft },
-  summaryDivider: { width: 1, height: 40, backgroundColor: colors.border },
-  summarySpark: { marginLeft: 'auto', width: 44, height: 44, borderRadius: radius.pill, backgroundColor: colors.yellow, alignItems: 'center', justifyContent: 'center' },
-  summarySparkText: { fontSize: 22, color: colors.charcoal },
+  summarySpark: { width: 44, height: 44, borderRadius: radius.pill, backgroundColor: colors.blue, alignItems: 'center', justifyContent: 'center' },
+  summarySparkText: { fontSize: 22, color: colors.surface },
   month: { ...typography.caption, color: colors.charcoalMuted, letterSpacing: 1, fontSize: 11, marginTop: spacing.xxl },
   list: { gap: spacing.sm, marginTop: spacing.sm },
   memoryCard: { flexDirection: 'row', alignItems: 'center', gap: spacing.sm, padding: spacing.md, backgroundColor: colors.surface, borderRadius: radius.lg, borderWidth: 1, borderColor: colors.border },
-  memoryArt: { width: 58, height: 58, borderRadius: radius.md, backgroundColor: colors.turquoiseSoft, alignItems: 'center', justifyContent: 'center' },
+  memoryArt: { width: 58, height: 58, borderRadius: radius.md, backgroundColor: colors.blueSoft, alignItems: 'center', justifyContent: 'center' },
   memoryArtAlt: { backgroundColor: colors.coralSoft },
   memoryInitial: { ...typography.heading2, color: colors.charcoal },
   memoryCopy: { flex: 1, gap: spacing.xxs },

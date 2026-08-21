@@ -46,19 +46,21 @@ Test the founder journey after navigation or recommendation changes:
 
 ```text
 splash → welcome/onboarding → Do → mode → SPONSAY ME
-→ one recommendation → replacement or LET'S GO → tabs
+→ one recommendation → replacement or I’M IN → action
 ```
 
 ## Design rules
 
-- The founder supplied a new visual reference in August 2026. Follow the code-native implementation now established in `src/theme/` and the map/reveal/detail components.
+- **Option 1A is the selected interface direction.** Keep the Do screen minimal, calm and decision-first.
 - Location Blue `#5BA7FF` is the primary brand and navigation colour.
 - Warm Cream `#FFF6E6` is the soft supporting surface.
 - Ink `#1F1F23` is primary text.
-- Action Coral `#FF6B57` marks primary decisions.
+- Action Coral `#FF6B57` is reserved for primary action moments such as **SPONSAY ME ✦** and **I’M IN**.
 - Mist `#E6E9EE` is the neutral border and control colour.
 - Use the blue location-star plus coral accent treatment in `BrandMark` until an approved production vector is supplied.
-- The Do screen may use a map as immediate location context, but it must still resolve to one recommendation rather than a browsable place directory.
+- The Do screen must not become map-first. Maps belong primarily in Around Me and should support decisions rather than replace them.
+- Show one recommendation at a time. Never expose a numeric match score.
+- **I’M IN** is the primary acceptance action; **Not this one** is secondary.
 - Keep screens warm, clear, confident and uncluttered.
 - Maintain accessible labels, contrast and touch targets.
 

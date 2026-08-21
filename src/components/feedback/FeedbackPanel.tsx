@@ -50,7 +50,7 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     paddingHorizontal: spacing.sm,
   },
-  selectedOption: { borderColor: colors.turquoise, backgroundColor: colors.turquoiseSoft },
+  selectedOption: { borderColor: colors.blue, backgroundColor: colors.blueSoft },
   optionText: { ...typography.caption, color: colors.charcoalSoft },
   selectedOptionText: { color: colors.charcoal },
   thanks: { ...typography.caption, color: colors.positive },

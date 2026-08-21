@@ -54,10 +54,10 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
     gap: 2,
   },
-  selected: { backgroundColor: colors.surface },
+  selected: { backgroundColor: colors.surface, borderWidth: 1, borderColor: colors.blue },
   pressed: { opacity: 0.75 },
   symbol: { color: colors.charcoalMuted, fontSize: 16, fontWeight: '800' },
-  selectedSymbol: { color: colors.turquoise },
+  selectedSymbol: { color: colors.blueDark },
   label: { ...typography.caption, color: colors.charcoalMuted, fontSize: 12 },
   selectedLabel: { color: colors.charcoal, fontWeight: '800' },
 });

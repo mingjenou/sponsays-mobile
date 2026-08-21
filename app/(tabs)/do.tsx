@@ -8,7 +8,6 @@ import { ExperienceArtwork } from '@/src/components/cards/ExperienceArtwork';
 import { ContextChip } from '@/src/components/chips/ContextChip';
 import { ModeSelector } from '@/src/components/chips/ModeSelector';
 import { ScreenContainer } from '@/src/components/layout/ScreenContainer';
-import { MapCanvas, MapSearchBar } from '@/src/components/maps/MapCanvas';
 import { BrandMark } from '@/src/components/typography/BrandMark';
 import { MAX_REPLACEMENTS_PER_SESSION } from '@/src/constants/recommendations';
 import {
@@ -21,7 +20,24 @@ import { ADELAIDE_PLACES } from '@/src/mocks/places';
 import { colors, radius, shadows, spacing, typography } from '@/src/theme';
 
 type DecisionStatus = 'idle' | 'deciding' | 'result' | 'limit' | 'empty';
-const CONTEXT_OPTIONS = ['Tonight', '$$', 'Couple', 'Nearby'] as const;
+
+const CONTEXT_OPTIONS = ['Tonight', '2 hrs', '$$', 'Couple', 'Nearby'] as const;
+
+const MODE_COPY: Record<SpontaneityMode, string> = {
+  safe: 'Closer to what you know.',
+  spontaneous: 'The sweet spot.',
+  chaos: 'Push me somewhere different.',
+};
+
+const replacementCopy = (count: number): string => {
+  if (count === 1) return 'Okay, another one.';
+  if (count === 2) return 'One more?';
+  if (count === 3) return 'Last switch before we change the vibe.';
+  return 'Not feeling it? I can make another call.';
+};
+
+const formatPrice = (priceLevel?: number): string =>
+  priceLevel === 0 ? 'Free' : '$'.repeat(priceLevel ?? 0) || 'Flexible';
 
 export default function DoScreen() {
   const [mode, setMode] = useState<SpontaneityMode>('spontaneous');
@@ -48,9 +64,10 @@ export default function DoScreen() {
   const buildContext = (rejections: string[]): RecommendationContext => ({
     interests: ['outdoors', 'culture', 'hidden gems', 'entertainment'],
     socialContext: selectedContext.includes('Couple') ? 'couple' : undefined,
+    mood: selectedContext.includes('Tonight') ? 'nightlife' : undefined,
     maximumPriceLevel: selectedContext.includes('$$') ? 2 : undefined,
     maximumDistanceKm: selectedContext.includes('Nearby') ? 5 : 15,
-    availableMinutes: 150,
+    availableMinutes: selectedContext.includes('2 hrs') ? 120 : 180,
     rejectedPlaceIds: rejections,
   });
 
@@ -63,8 +80,10 @@ export default function DoScreen() {
       const next = makeRecommendation(ADELAIDE_PLACES, buildContext(rejections), mode);
       setRecommendation(next);
       setStatus(next ? 'result' : 'empty');
-      if (next) void Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success).catch(() => undefined);
-    }, 1050);
+      if (next) {
+        void Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success).catch(() => undefined);
+      }
+    }, 900);
   };
 
   const rejectRecommendation = () => {
@@ -82,6 +101,15 @@ export default function DoScreen() {
     decide(nextRejectedIds);
   };
 
+  const acceptRecommendation = () => {
+    if (!recommendation) return;
+    void Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success).catch(() => undefined);
+    router.push({
+      pathname: '/recommendation/[id]',
+      params: { id: recommendation.place.id, reason: recommendation.reason },
+    });
+  };
+
   const resetSession = () => {
     setStatus('idle');
     setRecommendation(undefined);
@@ -91,36 +119,35 @@ export default function DoScreen() {
 
   if (status !== 'idle') {
     return (
-      <ScreenContainer scroll={false} contentStyle={styles.revealPage}>
-        <MapCanvas muted style={styles.revealMap} />
-        <View style={styles.revealScrim} />
-        <Pressable accessibilityRole="button" accessibilityLabel="Close recommendation" onPress={resetSession} style={styles.closeButton}>
-          <Ionicons name="close" size={22} color={colors.charcoal} />
-        </Pressable>
+      <ScreenContainer contentStyle={styles.revealPage}>
+        <View style={styles.revealHeader}>
+          <BrandMark compact />
+          <Pressable
+            accessibilityRole="button"
+            accessibilityLabel="Close recommendation"
+            onPress={resetSession}
+            style={styles.closeButton}
+          >
+            <Ionicons name="close" size={22} color={colors.charcoal} />
+          </Pressable>
+        </View>
 
         {status === 'deciding' ? (
           <View style={styles.deciding} accessibilityLiveRegion="polite">
             <DecisionMark loading />
-            <Text style={styles.decidingTitle}>SponSays is choosing</Text>
-            <Text style={styles.decidingAccent}>one for you!</Text>
-            <Text style={styles.decidingCopy}>A great pick nearby.</Text>
+            <Text style={styles.decidingTitle}>SponSays is deciding…</Text>
+            <Text style={styles.decidingCopy}>One good call. No shortlist.</Text>
           </View>
         ) : status === 'result' && recommendation ? (
           <View style={styles.resultContent}>
-            <DecisionMark />
-            <Text style={styles.resultLead}>SponSays chose</Text>
-            <Text style={styles.resultAccent}>one for you!</Text>
-            <Text style={styles.resultSubtitle}>A great pick nearby.</Text>
+            <Text style={styles.resultEyebrow}>SPONSAYS SAYS…</Text>
+            <Text style={styles.resultTitle}>This is the one.</Text>
             <RevealCard
               recommendation={recommendation}
-              onView={() => router.push({ pathname: '/recommendation/[id]', params: { id: recommendation.place.id } })}
+              onAccept={acceptRecommendation}
+              onReject={rejectRecommendation}
             />
-            <Pressable accessibilityRole="button" onPress={rejectRecommendation} style={styles.anotherButton}>
-              <Text style={styles.anotherText}>
-                {replacementCount >= MAX_REPLACEMENTS_PER_SESSION ? 'One last rethink' : 'Show me another'}
-              </Text>
-            </Pressable>
-            <Text style={styles.replacementText}>{replacementCount} of {MAX_REPLACEMENTS_PER_SESSION} replacements used</Text>
+            <Text style={styles.replacementText}>{replacementCopy(replacementCount)}</Text>
           </View>
         ) : (
           <View style={styles.messageCard}>
@@ -130,8 +157,8 @@ export default function DoScreen() {
             </Text>
             <Text style={styles.messageCopy}>
               {status === 'limit'
-                ? 'Three rerolls is enough browsing. Change one thing and SponSays will make a better call.'
-                : 'Relax one context choice and SponSays will try again.'}
+                ? 'We’re clearly missing it. Change one thing and I’ll make another call.'
+                : 'Relax one context choice and I’ll make another call.'}
             </Text>
             <PrimaryButton label="ADJUST CONTEXT" onPress={resetSession} />
           </View>
@@ -141,40 +168,61 @@ export default function DoScreen() {
   }
 
   return (
-    <ScreenContainer scroll={false} contentStyle={styles.page}>
+    <ScreenContainer contentStyle={styles.page}>
       <View style={styles.header}>
-        <View style={styles.avatar}><Ionicons name="person" size={21} color={colors.charcoal} /></View>
-        <View style={styles.headerCopy}>
-          <Text style={styles.headerEyebrow}>SPONTANEOUS PLANS</Text>
-          <Text style={styles.headerTitle}>Explore Nearby</Text>
+        <BrandMark compact />
+        <View style={styles.locationPill}>
+          <Ionicons name="location-outline" size={14} color={colors.blueDark} />
+          <Text style={styles.locationText}>Adelaide · Demo</Text>
         </View>
-        <Pressable accessibilityRole="button" accessibilityLabel="Decision settings" style={styles.filterButton}>
-          <Ionicons name="options-outline" size={22} color={colors.charcoal} />
-        </Pressable>
       </View>
-      <MapSearchBar />
 
-      <MapCanvas style={styles.homeMap}>
-        <View style={styles.decisionDock}>
-          <View style={styles.dockTopRow}>
-            <BrandMark compact />
-            <View style={styles.livePill}><View style={styles.liveDot} /><Text style={styles.liveText}>ADELAIDE · DEMO</Text></View>
-          </View>
-          <Text style={styles.dockTitle}>What feels good right now?</Text>
-          <View style={styles.contextRow}>
-            {CONTEXT_OPTIONS.map((label) => (
-              <ContextChip
-                key={label}
-                label={label}
-                selected={selectedContext.includes(label)}
-                onPress={() => toggleContext(label)}
-              />
-            ))}
-          </View>
-          <ModeSelector value={mode} onChange={setMode} />
-          <PrimaryButton label="SPONSAY ME ✦" onPress={() => decide()} />
+      <View style={styles.hero}>
+        <Text style={styles.heroTitle}>What should we do?</Text>
+        <Text style={styles.heroCopy}>Give me the moment. I’ll make the call.</Text>
+      </View>
+
+      <View style={styles.contextSection}>
+        <Text style={styles.sectionLabel}>Your moment</Text>
+        <View style={styles.contextRow}>
+          {CONTEXT_OPTIONS.map((label) => (
+            <ContextChip
+              key={label}
+              label={label}
+              selected={selectedContext.includes(label)}
+              onPress={() => toggleContext(label)}
+            />
+          ))}
         </View>
-      </MapCanvas>
+      </View>
+
+      <View style={styles.modeSection}>
+        <View style={styles.modeHeading}>
+          <Text style={styles.sectionLabel}>How spontaneous?</Text>
+          <Text style={styles.modeCopy}>{MODE_COPY[mode]}</Text>
+        </View>
+        <ModeSelector value={mode} onChange={setMode} />
+      </View>
+
+      <View style={styles.actionSection}>
+        <PrimaryButton
+          label="SPONSAY ME ✦"
+          onPress={() => decide()}
+          accessibilityHint="Ask SponSays to choose one nearby experience"
+        />
+        <Text style={styles.actionNote}>One recommendation. That’s the point.</Text>
+      </View>
+
+      <View style={styles.locationPreview}>
+        <View style={styles.locationIcon}>
+          <Ionicons name="navigate" size={18} color={colors.blueDark} />
+        </View>
+        <View style={styles.locationCopy}>
+          <Text style={styles.locationTitle}>Finding ideas near Adelaide CBD</Text>
+          <Text style={styles.locationMeta}>Mock area · no location permission needed</Text>
+        </View>
+        <Ionicons name="checkmark-circle" size={20} color={colors.blueDark} />
+      </View>
     </ScreenContainer>
   );
 }
@@ -182,81 +230,198 @@ export default function DoScreen() {
 function DecisionMark({ loading = false }: { loading?: boolean }) {
   return (
     <View style={styles.decisionMark}>
-      <View style={styles.markTail} />
       <Text style={styles.markSpark}>✦</Text>
       {loading ? <ActivityIndicator color={colors.surface} style={styles.markLoader} /> : null}
-      <View style={styles.confettiOne} />
-      <View style={styles.confettiTwo} />
-      <View style={styles.confettiThree} />
     </View>
   );
 }
 
-function RevealCard({ recommendation, onView }: { recommendation: RecommendationResult; onView: () => void }) {
+function RevealCard({
+  recommendation,
+  onAccept,
+  onReject,
+}: {
+  recommendation: RecommendationResult;
+  onAccept: () => void;
+  onReject: () => void;
+}) {
   const { place } = recommendation;
   return (
     <View style={styles.revealCard}>
       <View>
         <ExperienceArtwork style={styles.cardArtwork} />
-        <View style={styles.matchPill}><Text style={styles.matchText}>{Math.round(recommendation.score * 100)}% match</Text></View>
+        <View style={styles.categoryPill}>
+          <Text style={styles.categoryText}>{place.category}</Text>
+        </View>
       </View>
       <View style={styles.cardContent}>
         <Text style={styles.cardTitle}>{place.name}</Text>
-        <Text style={styles.cardSubtitle}>{recommendation.reason}</Text>
-        <Text style={styles.cardMeta}>{place.category} · {place.distanceKm} km away</Text>
-        <PrimaryButton label="VIEW EXPERIENCE" onPress={onView} />
+        <View style={styles.whyBlock}>
+          <Text style={styles.whyLabel}>Why we picked this</Text>
+          <Text style={styles.whyText}>{recommendation.reason}</Text>
+        </View>
+        <View style={styles.metaRow}>
+          <MetaItem icon="navigate-outline" value={`${place.distanceKm ?? '—'} km`} />
+          <MetaItem icon="time-outline" value={`${place.estimatedDurationMinutes ?? 60} min`} />
+          <MetaItem icon="wallet-outline" value={formatPrice(place.priceLevel)} />
+        </View>
+        <PrimaryButton
+          label="I’M IN"
+          onPress={onAccept}
+          accessibilityHint="Accept this recommendation"
+        />
+        <Pressable
+          accessibilityRole="button"
+          accessibilityLabel="Not this one"
+          onPress={onReject}
+          style={({ pressed }) => [styles.rejectButton, pressed && styles.rejectPressed]}
+        >
+          <Text style={styles.rejectText}>Not this one</Text>
+        </Pressable>
       </View>
     </View>
   );
 }
 
+function MetaItem({ icon, value }: { icon: keyof typeof Ionicons.glyphMap; value: string }) {
+  return (
+    <View style={styles.metaItem}>
+      <Ionicons name={icon} size={16} color={colors.blueDark} />
+      <Text style={styles.metaText}>{value}</Text>
+    </View>
+  );
+}
+
 const styles = StyleSheet.create({
-  page: { paddingTop: spacing.sm, paddingHorizontal: spacing.md, paddingBottom: spacing.sm, gap: spacing.sm },
-  header: { flexDirection: 'row', alignItems: 'center', minHeight: 50, gap: spacing.sm },
-  avatar: { width: 40, height: 40, borderRadius: radius.pill, backgroundColor: colors.grayLight, alignItems: 'center', justifyContent: 'center' },
-  headerCopy: { flex: 1 },
-  headerEyebrow: { ...typography.caption, color: colors.blueDark, fontSize: 9, letterSpacing: 1.1 },
-  headerTitle: { ...typography.heading2, color: colors.charcoal, fontSize: 20 },
-  filterButton: { width: 40, height: 40, borderRadius: radius.pill, backgroundColor: colors.creamDeep, alignItems: 'center', justifyContent: 'center' },
-  homeMap: { flex: 1, minHeight: 520, marginTop: -4 },
-  decisionDock: { position: 'absolute', left: spacing.sm, right: spacing.sm, bottom: spacing.sm, zIndex: 20, backgroundColor: 'rgba(255,255,255,0.96)', borderRadius: radius.xl, padding: spacing.md, gap: spacing.sm, ...shadows.card },
-  dockTopRow: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between' },
-  livePill: { flexDirection: 'row', alignItems: 'center', gap: spacing.xxs },
-  liveDot: { width: 7, height: 7, borderRadius: 4, backgroundColor: colors.positive },
-  liveText: { ...typography.caption, color: colors.charcoalMuted, fontSize: 9, letterSpacing: 0.6 },
-  dockTitle: { ...typography.bodyStrong, color: colors.charcoal },
+  page: { paddingTop: spacing.md, paddingBottom: spacing.xxl },
+  header: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between' },
+  locationPill: {
+    minHeight: 34,
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: spacing.xxs,
+    paddingHorizontal: spacing.sm,
+    borderRadius: radius.pill,
+    backgroundColor: colors.blueSoft,
+  },
+  locationText: { ...typography.caption, color: colors.blueDark, fontSize: 11 },
+  hero: { gap: spacing.xs, marginTop: spacing.huge },
+  heroTitle: { ...typography.display, color: colors.charcoal, fontSize: 40, lineHeight: 44 },
+  heroCopy: { ...typography.body, color: colors.charcoalSoft },
+  contextSection: { gap: spacing.sm, marginTop: spacing.xxl },
+  sectionLabel: { ...typography.bodyStrong, color: colors.charcoal },
   contextRow: { flexDirection: 'row', flexWrap: 'wrap', gap: spacing.xs },
-  revealPage: { padding: 0 },
-  revealMap: { ...StyleSheet.absoluteFillObject, borderRadius: 0 },
-  revealScrim: { ...StyleSheet.absoluteFillObject, backgroundColor: 'rgba(255,252,247,0.74)' },
-  closeButton: { position: 'absolute', top: spacing.md, left: spacing.md, width: 42, height: 42, borderRadius: radius.pill, backgroundColor: colors.surface, alignItems: 'center', justifyContent: 'center', zIndex: 10, ...shadows.card },
-  deciding: { flex: 1, alignItems: 'center', justifyContent: 'center', padding: spacing.xl },
-  decidingTitle: { ...typography.heading2, color: colors.charcoal, marginTop: spacing.xl },
-  decidingAccent: { ...typography.heading2, color: colors.blueDark },
-  decidingCopy: { ...typography.body, color: colors.charcoalSoft, marginTop: spacing.xs },
-  decisionMark: { width: 72, height: 72, borderRadius: 36, backgroundColor: colors.blue, alignItems: 'center', justifyContent: 'center' },
-  markTail: { position: 'absolute', bottom: -9, width: 26, height: 26, borderRadius: 4, backgroundColor: colors.blue, transform: [{ rotate: '45deg' }] },
-  markSpark: { color: colors.surface, fontSize: 34, zIndex: 2 },
-  markLoader: { position: 'absolute', bottom: -42 },
-  confettiOne: { position: 'absolute', width: 5, height: 15, borderRadius: 3, backgroundColor: colors.coral, top: -25, left: 5, transform: [{ rotate: '35deg' }] },
-  confettiTwo: { position: 'absolute', width: 5, height: 15, borderRadius: 3, backgroundColor: colors.blueDark, top: -30, right: 8, transform: [{ rotate: '-25deg' }] },
-  confettiThree: { position: 'absolute', width: 5, height: 13, borderRadius: 3, backgroundColor: colors.coral, right: -24, top: 8, transform: [{ rotate: '42deg' }] },
-  resultContent: { flex: 1, alignItems: 'center', justifyContent: 'center', paddingHorizontal: spacing.xl, paddingTop: spacing.xl },
-  resultLead: { ...typography.heading2, color: colors.charcoal, marginTop: spacing.md },
-  resultAccent: { ...typography.heading2, color: colors.blueDark },
-  resultSubtitle: { ...typography.body, color: colors.charcoalSoft, marginTop: spacing.xxs, marginBottom: spacing.md },
-  revealCard: { width: '100%', maxWidth: 350, backgroundColor: colors.surface, borderRadius: radius.xl, padding: spacing.sm, ...shadows.card },
-  cardArtwork: { height: 145 },
-  matchPill: { position: 'absolute', top: spacing.sm, left: spacing.sm, backgroundColor: colors.coral, paddingHorizontal: spacing.sm, paddingVertical: spacing.xs, borderRadius: radius.pill },
-  matchText: { ...typography.caption, color: colors.surface },
-  cardContent: { padding: spacing.sm, gap: spacing.xs },
-  cardTitle: { ...typography.heading2, color: colors.charcoal, fontSize: 20 },
-  cardSubtitle: { ...typography.caption, color: colors.charcoalSoft },
-  cardMeta: { ...typography.caption, color: colors.charcoalMuted, marginBottom: spacing.xs },
-  anotherButton: { minHeight: 42, justifyContent: 'center', paddingHorizontal: spacing.md, marginTop: spacing.xs },
-  anotherText: { ...typography.bodyStrong, color: colors.blueDark },
-  replacementText: { ...typography.caption, color: colors.charcoalMuted, fontSize: 10 },
-  messageCard: { margin: 'auto', width: '84%', backgroundColor: colors.surface, borderRadius: radius.xl, padding: spacing.xl, alignItems: 'center', gap: spacing.md, ...shadows.card },
-  messageTitle: { ...typography.heading2, color: colors.charcoal, textAlign: 'center' },
-  messageCopy: { ...typography.body, color: colors.charcoalSoft, textAlign: 'center' },
+  modeSection: {
+    gap: spacing.sm,
+    marginTop: spacing.xxl,
+    padding: spacing.md,
+    borderWidth: 1,
+    borderColor: colors.border,
+    borderRadius: radius.lg,
+    backgroundColor: colors.surface,
+  },
+  modeHeading: { flexDirection: 'row', alignItems: 'baseline', justifyContent: 'space-between', gap: spacing.sm },
+  modeCopy: { ...typography.caption, color: colors.charcoalMuted, textAlign: 'right', flex: 1 },
+  actionSection: { gap: spacing.xs, marginTop: spacing.xxl },
+  actionNote: { ...typography.caption, color: colors.charcoalMuted, textAlign: 'center' },
+  locationPreview: {
+    minHeight: 70,
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: spacing.sm,
+    marginTop: spacing.xl,
+    padding: spacing.md,
+    borderRadius: radius.lg,
+    backgroundColor: colors.blueSoft,
+  },
+  locationIcon: {
+    width: 38,
+    height: 38,
+    borderRadius: radius.pill,
+    backgroundColor: colors.surface,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  locationCopy: { flex: 1, gap: 2 },
+  locationTitle: { ...typography.caption, color: colors.charcoal },
+  locationMeta: { ...typography.caption, color: colors.charcoalMuted, fontSize: 10 },
+  revealPage: { minHeight: '100%', paddingTop: spacing.md, paddingBottom: spacing.xxl },
+  revealHeader: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between' },
+  closeButton: {
+    width: 42,
+    height: 42,
+    borderRadius: radius.pill,
+    backgroundColor: colors.surface,
+    alignItems: 'center',
+    justifyContent: 'center',
+    borderWidth: 1,
+    borderColor: colors.border,
+  },
+  deciding: { minHeight: 560, alignItems: 'center', justifyContent: 'center', paddingVertical: spacing.huge },
+  decidingTitle: { ...typography.heading1, color: colors.charcoal, marginTop: spacing.xxl, textAlign: 'center' },
+  decidingCopy: { ...typography.body, color: colors.charcoalSoft, marginTop: spacing.xs, textAlign: 'center' },
+  decisionMark: {
+    width: 76,
+    height: 76,
+    borderRadius: radius.pill,
+    backgroundColor: colors.blue,
+    alignItems: 'center',
+    justifyContent: 'center',
+    ...shadows.card,
+  },
+  markSpark: { color: colors.surface, fontSize: 34 },
+  markLoader: { position: 'absolute', bottom: -38 },
+  resultContent: { alignItems: 'center', paddingTop: spacing.xxl },
+  resultEyebrow: { ...typography.caption, color: colors.blueDark, letterSpacing: 1.2 },
+  resultTitle: { ...typography.heading1, color: colors.charcoal, marginTop: spacing.xs, marginBottom: spacing.lg },
+  revealCard: {
+    width: '100%',
+    maxWidth: 380,
+    backgroundColor: colors.surface,
+    borderRadius: radius.xl,
+    padding: spacing.sm,
+    borderWidth: 1,
+    borderColor: colors.border,
+    ...shadows.card,
+  },
+  cardArtwork: { height: 170 },
+  categoryPill: {
+    position: 'absolute',
+    top: spacing.sm,
+    left: spacing.sm,
+    backgroundColor: colors.blue,
+    paddingHorizontal: spacing.sm,
+    paddingVertical: spacing.xs,
+    borderRadius: radius.pill,
+  },
+  categoryText: { ...typography.caption, color: colors.surface, fontSize: 11 },
+  cardContent: { padding: spacing.sm, gap: spacing.md },
+  cardTitle: { ...typography.heading2, color: colors.charcoal, fontSize: 24 },
+  whyBlock: { gap: spacing.xxs },
+  whyLabel: { ...typography.caption, color: colors.blueDark },
+  whyText: { ...typography.caption, color: colors.charcoalSoft, fontWeight: '500' },
+  metaRow: { flexDirection: 'row', flexWrap: 'wrap', gap: spacing.xs },
+  metaItem: {
+    minHeight: 34,
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: spacing.xxs,
+    paddingHorizontal: spacing.sm,
+    borderRadius: radius.pill,
+    backgroundColor: colors.blueSoft,
+  },
+  metaText: { ...typography.caption, color: colors.charcoal, fontSize: 11 },
+  rejectButton: { minHeight: 48, alignItems: 'center', justifyContent: 'center' },
+  rejectPressed: { opacity: 0.65 },
+  rejectText: { ...typography.bodyStrong, color: colors.charcoalSoft },
+  replacementText: { ...typography.caption, color: colors.charcoalMuted, marginTop: spacing.md, textAlign: 'center' },
+  messageCard: {
+    minHeight: 520,
+    alignItems: 'center',
+    justifyContent: 'center',
+    gap: spacing.md,
+    paddingHorizontal: spacing.lg,
+  },
+  messageTitle: { ...typography.heading1, color: colors.charcoal, textAlign: 'center', marginTop: spacing.md },
+  messageCopy: { ...typography.body, color: colors.charcoalSoft, textAlign: 'center', maxWidth: 340 },
 });

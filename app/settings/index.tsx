@@ -15,7 +15,7 @@ export default function SettingsScreen() {
         <View style={styles.spacer} />
       </View>
       <View style={styles.card}>
-        <View style={styles.iconCircle}><Ionicons name="construct-outline" size={28} color={colors.turquoise} /></View>
+        <View style={styles.iconCircle}><Ionicons name="construct-outline" size={28} color={colors.blueDark} /></View>
         <Text style={styles.title}>Settings come later.</Text>
         <Text style={styles.copy}>This milestone stays focused on the credential-free Expo Go recommendation journey.</Text>
       </View>
@@ -29,7 +29,7 @@ const styles = StyleSheet.create({
   headerTitle: { ...typography.bodyStrong, color: colors.charcoal },
   spacer: { width: 44 },
   card: { marginTop: spacing.xxl, padding: spacing.xxl, borderRadius: radius.xl, backgroundColor: colors.surface, alignItems: 'center', gap: spacing.md },
-  iconCircle: { width: 64, height: 64, borderRadius: radius.pill, backgroundColor: colors.turquoiseSoft, alignItems: 'center', justifyContent: 'center' },
+  iconCircle: { width: 64, height: 64, borderRadius: radius.pill, backgroundColor: colors.blueSoft, alignItems: 'center', justifyContent: 'center' },
   title: { ...typography.heading2, color: colors.charcoal, textAlign: 'center' },
   copy: { ...typography.body, color: colors.charcoalSoft, textAlign: 'center' },
 });
