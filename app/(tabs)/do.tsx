@@ -206,7 +206,7 @@ export default function DoScreen() {
 
       <View style={styles.actionSection}>
         <PrimaryButton
-          label="SPONSAYS ME ✦"
+          label="SPONSAY ME ✦"
           onPress={() => decide()}
           accessibilityHint="Ask SponSays to choose one nearby experience"
         />
