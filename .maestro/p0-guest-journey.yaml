@@ -8,7 +8,8 @@ name: P0 guest recommendation journey
 - assertVisible: 'What are we doing?'
 - tapOn: 'SPONSAY ME ✦'
 - assertVisible: 'SponSays says…'
-- tapOn: "LET'S GO"
-- assertVisible: 'OPEN DIRECTIONS'
+- tapOn: "I’M IN"
+- assertVisible: "YOU’RE GOING."
+- assertVisible: 'GET DIRECTIONS'
 - tapOn: '👍 Yes'
 - assertVisible: 'Got it — thanks.'

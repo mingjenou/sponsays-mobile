@@ -70,8 +70,8 @@ If Expo Go says the project SDK is incompatible, update Expo Go from the phone�
 3. On **Do**, change between Safe, Spontaneous and Chaos.
 4. Tap **SPONSAY ME ✦**.
 5. Confirm one Adelaide recommendation appears.
-6. Tap **Not feeling it** and confirm a different recommendation appears.
-7. Tap **LET'S GO**, then try the directions button and feedback.
+6. Tap **Not this one** and confirm a different recommendation appears.
+7. Tap **I’M IN**, then try the directions button and feedback.
 8. Open **Around Me**, **Memories** and **Me** using the bottom tabs.
 
 ## Developer commands

@@ -19,7 +19,7 @@ export function SectionHeader({ eyebrow, title, description }: SectionHeaderProp
 
 const styles = StyleSheet.create({
   container: { gap: spacing.xs },
-  eyebrow: { ...typography.caption, color: colors.turquoise, textTransform: 'uppercase', letterSpacing: 1.3 },
+  eyebrow: { ...typography.caption, color: colors.blueDark, textTransform: 'uppercase', letterSpacing: 1.3 },
   title: { ...typography.heading1, color: colors.charcoal },
   description: { ...typography.body, color: colors.charcoalSoft },
 });

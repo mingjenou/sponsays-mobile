@@ -10,7 +10,7 @@ SponSays makes a decision instead of asking users to browse. The default flow is
 - Keep **SPONSAY ME ✦** visually dominant.
 - Keep Safe, Spontaneous and Chaos visible and understandable.
 - Use a short deciding moment before revealing the result.
-- Offer **LET'S GO** as the primary next action.
+- Offer **I’M IN** as the primary acceptance action.
 - Limit easy replacements; after repeated rejection, ask for a context change.
 - Around Me supports the decision engine and must not become the dominant browsing surface.
 - Memories remain private and lightweight in the MVP.

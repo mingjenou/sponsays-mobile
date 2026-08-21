@@ -30,7 +30,7 @@ export default function WelcomeScreen() {
           {PROMISES.map((item) => (
             <View key={item.text} style={styles.promiseRow}>
               <View style={styles.promiseIcon}>
-                <Ionicons name={item.icon} size={19} color={colors.turquoise} />
+                <Ionicons name={item.icon} size={19} color={colors.blueDark} />
               </View>
               <Text style={styles.promiseText}>{item.text}</Text>
             </View>
@@ -69,7 +69,7 @@ const styles = StyleSheet.create({
     borderRadius: radius.pill,
     alignItems: 'center',
     justifyContent: 'center',
-    backgroundColor: colors.turquoiseSoft,
+    backgroundColor: colors.blueSoft,
   },
   promiseText: { ...typography.caption, color: colors.charcoalSoft, flex: 1 },
   actions: { marginTop: 'auto', gap: spacing.xs },

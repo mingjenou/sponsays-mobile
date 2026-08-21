@@ -5,6 +5,6 @@ name: Recommendation rejection and reroll
     clearState: true
 - tapOn: 'Skip and try the demo'
 - tapOn: 'SPONSAY ME'
-- assertVisible: 'Not feeling it'
-- tapOn: 'Not feeling it'
-- assertVisible: "LET'S GO"
+- assertVisible: 'Not this one'
+- tapOn: 'Not this one'
+- assertVisible: "I’M IN"

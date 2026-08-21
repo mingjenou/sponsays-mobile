@@ -5,10 +5,10 @@ interface ContextChipProps {
   label: string;
   selected: boolean;
   onPress: () => void;
-  accent?: 'turquoise' | 'yellow';
+  accent?: 'blue' | 'warm';
 }
 
-export function ContextChip({ label, selected, onPress, accent = 'turquoise' }: ContextChipProps) {
+export function ContextChip({ label, selected, onPress, accent = 'blue' }: ContextChipProps) {
   return (
     <Pressable
       accessibilityRole="button"
@@ -16,7 +16,7 @@ export function ContextChip({ label, selected, onPress, accent = 'turquoise' }: 
       onPress={onPress}
       style={({ pressed }) => [
         styles.chip,
-        selected && (accent === 'yellow' ? styles.selectedYellow : styles.selectedTurquoise),
+        selected && (accent === 'warm' ? styles.selectedWarm : styles.selectedBlue),
         pressed && styles.pressed,
       ]}
     >
@@ -35,8 +35,8 @@ const styles = StyleSheet.create({
     borderColor: colors.border,
     backgroundColor: colors.surface,
   },
-  selectedTurquoise: { borderColor: colors.turquoise, backgroundColor: colors.turquoiseSoft },
-  selectedYellow: { borderColor: colors.yellow, backgroundColor: colors.yellowSoft },
+  selectedBlue: { borderColor: colors.blue, backgroundColor: colors.blueSoft },
+  selectedWarm: { borderColor: colors.yellow, backgroundColor: colors.yellowSoft },
   pressed: { transform: [{ scale: 0.97 }] },
   label: { ...typography.caption, color: colors.charcoalSoft },
   selectedLabel: { color: colors.charcoal, fontWeight: '800' },

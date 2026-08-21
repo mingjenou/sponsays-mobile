@@ -12,7 +12,7 @@ export function EmptyState({ icon, title, message }: EmptyStateProps) {
   return (
     <View style={styles.container}>
       <View style={styles.iconCircle}>
-        <Ionicons name={icon} size={26} color={colors.turquoise} />
+        <Ionicons name={icon} size={26} color={colors.blueDark} />
       </View>
       <Text style={styles.title}>{title}</Text>
       <Text style={styles.message}>{message}</Text>
@@ -28,7 +28,7 @@ const styles = StyleSheet.create({
     borderRadius: radius.pill,
     alignItems: 'center',
     justifyContent: 'center',
-    backgroundColor: colors.turquoiseSoft,
+    backgroundColor: colors.blueSoft,
     marginBottom: spacing.xs,
   },
   title: { ...typography.heading2, color: colors.charcoal, textAlign: 'center' },

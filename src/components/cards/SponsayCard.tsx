@@ -19,7 +19,7 @@ export function SponsayCard({
   recommendation,
   onAccept,
   onReject,
-  rejectionLabel = 'Not feeling it',
+  rejectionLabel = 'Not this one',
   rejectionDisabled = false,
 }: SponsayCardProps) {
   const { place } = recommendation;
@@ -55,7 +55,7 @@ export function SponsayCard({
 
         <View style={styles.actions}>
           <PrimaryButton
-            label="LET'S GO"
+            label="I’M IN"
             onPress={onAccept}
             icon={<Ionicons name="arrow-forward" size={19} color={colors.surface} />}
             accessibilityHint="Open the action view for this recommendation"
@@ -85,7 +85,7 @@ const styles = StyleSheet.create({
     borderColor: colors.border,
     ...shadows.card,
   },
-  artwork: { height: 156, backgroundColor: colors.turquoiseSoft, overflow: 'hidden' },
+  artwork: { height: 156, backgroundColor: colors.blueSoft, overflow: 'hidden' },
   sun: {
     position: 'absolute',
     width: 90,
@@ -100,7 +100,7 @@ const styles = StyleSheet.create({
     width: 260,
     height: 85,
     borderRadius: 120,
-    backgroundColor: colors.turquoise,
+    backgroundColor: colors.blue,
     left: -46,
     bottom: -36,
     transform: [{ rotate: '-7deg' }],
@@ -116,7 +116,7 @@ const styles = StyleSheet.create({
   artworkMark: { ...typography.caption, color: colors.charcoal, maxWidth: 150 },
   content: { padding: spacing.lg, gap: spacing.md },
   confidenceRow: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', gap: spacing.sm },
-  confidence: { ...typography.caption, color: colors.turquoise, textTransform: 'uppercase', letterSpacing: 0.7 },
+  confidence: { ...typography.caption, color: colors.blueDark, textTransform: 'uppercase', letterSpacing: 0.7 },
   openPill: { flexDirection: 'row', alignItems: 'center', gap: spacing.xxs },
   openDot: { width: 7, height: 7, borderRadius: 4, backgroundColor: colors.positive },
   openText: { ...typography.caption, color: colors.charcoalMuted, fontSize: 12 },

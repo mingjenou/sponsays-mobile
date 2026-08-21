@@ -9,8 +9,6 @@ export const colors = {
   charcoalSoft: '#555B66',
   charcoalMuted: '#8B919C',
   border: '#E6E9EE',
-  turquoise: '#5BA7FF',
-  turquoiseSoft: '#EAF4FF',
   yellow: '#FFD98B',
   yellowSoft: '#FFF6E6',
   coral: '#FF6B57',
