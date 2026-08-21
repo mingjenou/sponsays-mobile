@@ -14,7 +14,7 @@ const VIBE = [
 
 const PREFERENCES = [
   { icon: 'restaurant-outline' as const, label: 'Dietary preferences', value: 'Not set' },
-  { icon: 'notifications-outline' as const, label: 'Notifications', value: 'Demo only' },
+  { icon: 'notifications-outline' as const, label: 'Notifications', value: 'Off' },
 ];
 
 export default function MeScreen() {
@@ -24,8 +24,8 @@ export default function MeScreen() {
       <View style={styles.profile}>
         <View style={styles.avatar}><Text style={styles.avatarText}>S</Text></View>
         <View style={styles.profileCopy}>
-          <Text style={styles.name}>Demo profile</Text>
-          <Text style={styles.location}>Adelaide · Nothing leaves this demo</Text>
+          <Text style={styles.name}>Your profile</Text>
+          <Text style={styles.location}>Adelaide</Text>
         </View>
         <View style={styles.statusPill}>
           <Text style={styles.statusText}>DEMO</Text>
@@ -41,8 +41,8 @@ export default function MeScreen() {
           <Ionicons name="person-outline" size={20} color={colors.blueDark} />
         </View>
         <View style={styles.accountCopyWrap}>
-          <Text style={styles.accountTitle}>Demo profile</Text>
-          <Text style={styles.accountCopy}>No sign-in, cloud account or external service is required in this milestone.</Text>
+          <Text style={styles.accountTitle}>Try it without an account</Text>
+          <Text style={styles.accountCopy}>Your choices stay on this device while you explore SponSays.</Text>
         </View>
       </View>
     </ScreenContainer>

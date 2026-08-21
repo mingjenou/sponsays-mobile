@@ -40,7 +40,7 @@ export function PrimaryButton({
         <ActivityIndicator color={colors.surface} />
       ) : (
         <View style={styles.content}>
-          <Text style={styles.label}>{label}</Text>
+          <Text maxFontSizeMultiplier={1.5} style={styles.label}>{label}</Text>
           {icon}
         </View>
       )}

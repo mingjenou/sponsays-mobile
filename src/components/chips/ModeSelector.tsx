@@ -27,8 +27,8 @@ export function ModeSelector({ value, onChange }: ModeSelectorProps) {
             onPress={() => onChange(mode.value)}
             style={({ pressed }) => [styles.option, selected && styles.selected, pressed && styles.pressed]}
           >
-            <Text style={[styles.symbol, selected && styles.selectedSymbol]}>{mode.symbol}</Text>
-            <Text style={[styles.label, selected && styles.selectedLabel]} numberOfLines={1}>
+            <Text maxFontSizeMultiplier={1.4} style={[styles.symbol, selected && styles.selectedSymbol]}>{mode.symbol}</Text>
+            <Text maxFontSizeMultiplier={1.4} style={[styles.label, selected && styles.selectedLabel]} numberOfLines={1}>
               {mode.label}
             </Text>
           </Pressable>

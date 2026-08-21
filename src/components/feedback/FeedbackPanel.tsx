@@ -11,7 +11,7 @@ export function FeedbackPanel({ value, onChange }: FeedbackPanelProps) {
     <View style={styles.panel}>
       <View>
         <Text style={styles.title}>Good call?</Text>
-        <Text style={styles.copy}>Your answer will help future SponSays.</Text>
+        <Text style={styles.copy}>Your feedback improves future SponSays.</Text>
       </View>
       <View style={styles.options}>
         <FeedbackButton label="👍 Yes" selected={value === 'positive'} onPress={() => onChange('positive')} />

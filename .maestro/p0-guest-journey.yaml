@@ -4,8 +4,8 @@ name: P0 guest recommendation journey
 - launchApp:
     clearState: true
 - assertVisible: 'Stop deciding.*'
-- tapOn: 'Skip and try the demo'
-- assertVisible: 'What are we doing?'
+- tapOn: 'Try SponSays without an account'
+- assertVisible: 'What should we do?'
 - tapOn: 'SPONSAY ME ✦'
 - assertVisible: 'SponSays says…'
 - tapOn: "I’M IN"

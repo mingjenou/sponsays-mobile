@@ -11,13 +11,13 @@ export default function SettingsScreen() {
         <Pressable accessibilityRole="button" accessibilityLabel="Go back" onPress={() => router.back()} style={styles.backButton}>
           <Ionicons name="arrow-back" size={22} color={colors.charcoal} />
         </Pressable>
-        <Text style={styles.headerTitle}>Settings preview</Text>
+        <Text style={styles.headerTitle}>Settings</Text>
         <View style={styles.spacer} />
       </View>
       <View style={styles.card}>
         <View style={styles.iconCircle}><Ionicons name="construct-outline" size={28} color={colors.blueDark} /></View>
-        <Text style={styles.title}>Settings come later.</Text>
-        <Text style={styles.copy}>This milestone stays focused on the credential-free Expo Go recommendation journey.</Text>
+        <Text style={styles.title}>More preferences are coming soon.</Text>
+        <Text style={styles.copy}>For now, keep making good calls with the choices already on your profile.</Text>
       </View>
     </ScreenContainer>
   );

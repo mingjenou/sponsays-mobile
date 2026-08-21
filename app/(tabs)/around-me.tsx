@@ -20,7 +20,7 @@ export default function AroundMeScreen() {
       <BrandMark compact />
       <View style={styles.heading}>
         <SectionHeader
-          eyebrow="ADELAIDE CBD · DEMO AREA"
+          eyebrow="ADELAIDE · DEMO"
           title="Around you"
           description="A quick read of the area — enough context to make a call, not another map to browse."
         />
