@@ -18,6 +18,7 @@ import {
 } from '@/src/features/recommendations/engine';
 import { ADELAIDE_PLACES } from '@/src/mocks/places';
 import { colors, radius, shadows, spacing, typography } from '@/src/theme';
+import { formatDuration } from '@/src/utils/formatDuration';
 
 type DecisionStatus = 'idle' | 'deciding' | 'result' | 'limit' | 'empty';
 
@@ -140,7 +141,7 @@ export default function DoScreen() {
           </View>
         ) : status === 'result' && recommendation ? (
           <View style={styles.resultContent}>
-            <Text style={styles.resultEyebrow}>SPONSAYS SAYS…</Text>
+            <Text style={styles.resultEyebrow}>SponSays says…</Text>
             <Text style={styles.resultTitle}>This is the one.</Text>
             <RevealCard
               recommendation={recommendation}
@@ -219,7 +220,7 @@ export default function DoScreen() {
         </View>
         <View style={styles.locationCopy}>
           <Text style={styles.locationTitle}>Finding ideas near Adelaide CBD</Text>
-          <Text style={styles.locationMeta}>Mock area · no location permission needed</Text>
+          <Text style={styles.locationMeta}>Ready around Adelaide CBD</Text>
         </View>
         <Ionicons name="checkmark-circle" size={20} color={colors.blueDark} />
       </View>
@@ -262,7 +263,7 @@ function RevealCard({
         </View>
         <View style={styles.metaRow}>
           <MetaItem icon="navigate-outline" value={`${place.distanceKm ?? '—'} km`} />
-          <MetaItem icon="time-outline" value={`${place.estimatedDurationMinutes ?? 60} min`} />
+          <MetaItem icon="time-outline" value={formatDuration(place.estimatedDurationMinutes ?? 60)} />
           <MetaItem icon="wallet-outline" value={formatPrice(place.priceLevel)} />
         </View>
         <PrimaryButton
@@ -305,15 +306,15 @@ const styles = StyleSheet.create({
     backgroundColor: colors.blueSoft,
   },
   locationText: { ...typography.caption, color: colors.blueDark, fontSize: 11 },
-  hero: { gap: spacing.xs, marginTop: spacing.huge },
+  hero: { gap: spacing.xs, marginTop: spacing.xxl },
   heroTitle: { ...typography.display, color: colors.charcoal, fontSize: 40, lineHeight: 44 },
   heroCopy: { ...typography.body, color: colors.charcoalSoft },
-  contextSection: { gap: spacing.sm, marginTop: spacing.xxl },
+  contextSection: { gap: spacing.sm, marginTop: spacing.xl },
   sectionLabel: { ...typography.bodyStrong, color: colors.charcoal },
   contextRow: { flexDirection: 'row', flexWrap: 'wrap', gap: spacing.xs },
   modeSection: {
-    gap: spacing.sm,
-    marginTop: spacing.xxl,
+    gap: spacing.xs,
+    marginTop: spacing.xl,
     padding: spacing.md,
     borderWidth: 1,
     borderColor: colors.border,
@@ -322,7 +323,7 @@ const styles = StyleSheet.create({
   },
   modeHeading: { flexDirection: 'row', alignItems: 'baseline', justifyContent: 'space-between', gap: spacing.sm },
   modeCopy: { ...typography.caption, color: colors.charcoalMuted, textAlign: 'right', flex: 1 },
-  actionSection: { gap: spacing.xs, marginTop: spacing.xxl },
+  actionSection: { gap: spacing.xs, marginTop: spacing.md },
   actionNote: { ...typography.caption, color: colors.charcoalMuted, textAlign: 'center' },
   locationPreview: {
     minHeight: 70,
@@ -348,8 +349,8 @@ const styles = StyleSheet.create({
   revealPage: { minHeight: '100%', paddingTop: spacing.md, paddingBottom: spacing.xxl },
   revealHeader: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between' },
   closeButton: {
-    width: 42,
-    height: 42,
+    width: 44,
+    height: 44,
     borderRadius: radius.pill,
     backgroundColor: colors.surface,
     alignItems: 'center',

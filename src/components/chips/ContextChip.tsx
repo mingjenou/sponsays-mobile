@@ -12,6 +12,7 @@ export function ContextChip({ label, selected, onPress, accent = 'blue' }: Conte
   return (
     <Pressable
       accessibilityRole="button"
+      accessibilityLabel={label}
       accessibilityState={{ selected }}
       onPress={onPress}
       style={({ pressed }) => [
@@ -20,14 +21,14 @@ export function ContextChip({ label, selected, onPress, accent = 'blue' }: Conte
         pressed && styles.pressed,
       ]}
     >
-      <Text style={[styles.label, selected && styles.selectedLabel]}>{label}</Text>
+      <Text maxFontSizeMultiplier={1.5} style={[styles.label, selected && styles.selectedLabel]}>{label}</Text>
     </Pressable>
   );
 }
 
 const styles = StyleSheet.create({
   chip: {
-    minHeight: 42,
+    minHeight: 44,
     justifyContent: 'center',
     paddingHorizontal: spacing.md,
     borderRadius: radius.pill,

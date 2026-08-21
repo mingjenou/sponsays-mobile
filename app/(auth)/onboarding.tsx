@@ -95,7 +95,7 @@ export default function OnboardingScreen() {
 
         <View style={styles.actions}>
           <PrimaryButton label="LET'S SPONSAY" onPress={() => router.replace('/(tabs)/do')} />
-          <Text style={styles.note}>Demo preferences are temporary and require no account.</Text>
+          <Text style={styles.note}>Try SponSays without creating an account.</Text>
         </View>
       </ScrollView>
     </SafeAreaView>

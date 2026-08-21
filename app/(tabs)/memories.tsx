@@ -21,7 +21,7 @@ export default function MemoriesScreen() {
       <View style={styles.summary}>
         <View style={styles.summaryCopy}>
           <Text style={styles.summaryNumber}>{SAMPLE_MEMORIES.length} new places tried</Text>
-          <Text style={styles.summaryLabel}>A small demo history of accepted SponSays.</Text>
+          <Text style={styles.summaryLabel}>A little history of the good calls you accepted.</Text>
         </View>
         <View style={styles.summarySpark}>
           <Text style={styles.summarySparkText}>✦</Text>
@@ -48,7 +48,7 @@ export default function MemoriesScreen() {
 
       <View style={styles.note}>
         <Ionicons name="lock-closed-outline" size={19} color={colors.charcoalSoft} />
-        <Text style={styles.noteText}>Memories are private in this MVP. No feed, followers or public profile.</Text>
+        <Text style={styles.noteText}>Your memories stay private to you.</Text>
       </View>
     </ScreenContainer>
   );

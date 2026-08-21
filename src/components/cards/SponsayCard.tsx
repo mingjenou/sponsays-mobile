@@ -2,6 +2,7 @@ import { Ionicons } from '@expo/vector-icons';
 import { StyleSheet, Text, View } from 'react-native';
 import type { RecommendationResult } from '@/src/features/recommendations/engine';
 import { colors, radius, shadows, spacing, typography } from '@/src/theme';
+import { formatDuration } from '@/src/utils/formatDuration';
 import { PrimaryButton } from '../buttons/PrimaryButton';
 import { TextButton } from '../buttons/TextButton';
 
@@ -41,7 +42,7 @@ export function SponsayCard({
           <Text style={styles.confidence}>{recommendation.confidenceLabel}</Text>
           <View style={styles.openPill}>
             <View style={styles.openDot} />
-            <Text style={styles.openText}>Open in demo</Text>
+            <Text style={styles.openText}>Open now</Text>
           </View>
         </View>
         <Text style={styles.title}>{place.name}</Text>
@@ -49,7 +50,7 @@ export function SponsayCard({
 
         <View style={styles.metrics}>
           <Metric icon="navigate-outline" label={`${place.distanceKm ?? '—'} km`} />
-          <Metric icon="time-outline" label={`${place.estimatedDurationMinutes ?? '—'} min`} />
+          <Metric icon="time-outline" label={formatDuration(place.estimatedDurationMinutes)} />
           <Metric icon="wallet-outline" label={priceLabel(place.priceLevel)} />
         </View>
 
