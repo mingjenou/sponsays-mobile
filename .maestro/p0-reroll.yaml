@@ -3,8 +3,8 @@ name: Recommendation rejection and reroll
 ---
 - launchApp:
     clearState: true
-- tapOn: 'Skip and try the demo'
-- tapOn: 'SPONSAY ME'
+- tapOn: 'Try SponSays without an account'
+- tapOn: 'SPONSAY ME ✦'
 - assertVisible: 'Not this one'
 - tapOn: 'Not this one'
 - assertVisible: "I’M IN"

@@ -11,6 +11,7 @@ import { EmptyState } from '@/src/components/layout/EmptyState';
 import { ScreenContainer } from '@/src/components/layout/ScreenContainer';
 import { findMockPlace } from '@/src/mocks/places';
 import { colors, radius, shadows, spacing, typography } from '@/src/theme';
+import { formatDuration } from '@/src/utils/formatDuration';
 
 export default function RecommendationActionScreen() {
   const { id, reason } = useLocalSearchParams<{ id: string; reason?: string }>();
@@ -67,7 +68,7 @@ export default function RecommendationActionScreen() {
         </View>
 
         <View style={styles.detailsCard}>
-          <DetailRow icon="time-outline" label="Time" value={`${place.estimatedDurationMinutes ?? 60} min`} />
+          <DetailRow icon="time-outline" label="Time" value={formatDuration(place.estimatedDurationMinutes ?? 60)} />
           <DetailRow icon="cash-outline" label="Cost" value={price} border />
           <DetailRow icon="navigate-outline" label="Distance" value={`${place.distanceKm ?? '—'} km`} border />
           <DetailRow icon="pricetag-outline" label="Category" value={place.category} border />
@@ -87,17 +88,25 @@ export default function RecommendationActionScreen() {
           icon={<Ionicons name="navigate" size={18} color={colors.surface} />}
           accessibilityHint="Open directions in your maps app"
         />
-        <Pressable accessibilityRole="button" onPress={() => setSaved((current) => !current)} style={styles.saveTextButton}>
+        <Pressable
+          accessibilityRole="button"
+          accessibilityLabel={saved ? 'Remove from saved' : 'Save for later'}
+          accessibilityState={{ selected: saved }}
+          onPress={() => setSaved((current) => !current)}
+          style={styles.saveTextButton}
+        >
           <Text style={styles.saveText}>{saved ? 'Saved for later ✓' : 'Save for Later'}</Text>
         </Pressable>
 
-        <FeedbackPanel
-          value={feedback}
-          onChange={(value) => {
-            setFeedback(value);
-            void Haptics.selectionAsync().catch(() => undefined);
-          }}
-        />
+        <View style={styles.feedbackSection}>
+          <FeedbackPanel
+            value={feedback}
+            onChange={(value) => {
+              setFeedback(value);
+              void Haptics.selectionAsync().catch(() => undefined);
+            }}
+          />
+        </View>
       </View>
     </ScreenContainer>
   );
@@ -105,11 +114,10 @@ export default function RecommendationActionScreen() {
 
 function DetailRow({ icon, label, value, border = false }: { icon: keyof typeof Ionicons.glyphMap; label: string; value: string; border?: boolean }) {
   return (
-    <View style={[styles.detailRow, border && styles.detailBorder]}>
+    <View accessible accessibilityLabel={`${label}, ${value}`} style={[styles.detailRow, border && styles.detailBorder]}>
       <Ionicons name={icon} size={21} color={colors.charcoal} />
       <Text style={styles.detailLabel}>{label}</Text>
       <Text style={styles.detailValue}>{value}</Text>
-      <Ionicons name="chevron-forward" size={17} color={colors.charcoalMuted} />
     </View>
   );
 }
@@ -123,7 +131,7 @@ const styles = StyleSheet.create({
   backButton: { left: spacing.md },
   saveButton: { right: spacing.md },
   sheet: { marginTop: -26, borderTopLeftRadius: radius.xl, borderTopRightRadius: radius.xl, backgroundColor: colors.surface, padding: spacing.xl, gap: spacing.md },
-  commitment: { ...typography.caption, color: colors.coral, letterSpacing: 1.2 },
+  commitment: { ...typography.heading2, color: colors.coral, fontWeight: '800', letterSpacing: 0.6 },
   title: { ...typography.heading1, color: colors.charcoal },
   subtitle: { ...typography.body, color: colors.charcoalSoft, marginTop: -8 },
   tags: { flexDirection: 'row', flexWrap: 'wrap', gap: spacing.xs },
@@ -140,6 +148,7 @@ const styles = StyleSheet.create({
   whyCopy: { flex: 1, gap: spacing.xxs },
   whyTitle: { ...typography.caption, color: colors.blueDark },
   whyText: { ...typography.caption, color: colors.charcoalSoft, fontWeight: '500' },
-  saveTextButton: { minHeight: 42, alignItems: 'center', justifyContent: 'center' },
+  saveTextButton: { minHeight: 44, alignItems: 'center', justifyContent: 'center' },
   saveText: { ...typography.bodyStrong, color: colors.blueDark },
+  feedbackSection: { marginTop: spacing.xl, paddingTop: spacing.md, borderTopWidth: 1, borderTopColor: colors.border },
 });
