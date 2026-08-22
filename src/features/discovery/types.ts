@@ -19,3 +19,11 @@ export interface DiscoveryConstraints {
   maximumPriceLevel?: number;
   partySize: DiscoveryPartySize;
 }
+
+export interface DiscoverySessionFields {
+  mood: null;
+  socialContext: null;
+  budget: string | null;
+  availableMinutes: number;
+  radiusKm: number;
+}

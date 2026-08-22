@@ -7,6 +7,7 @@ import type {
   DiscoveryConstraints,
   DiscoveryFilters,
   DiscoveryIntent,
+  DiscoverySessionFields,
 } from './types';
 
 const normalizeQuery = (query: string): string =>
@@ -54,4 +55,18 @@ export const formatDiscoveryFilterSummary = (filters: DiscoveryFilters): string 
   const budget = BUDGET_OPTIONS.find((option) => option.value === filters.budget)?.label;
   const party = PARTY_SIZE_OPTIONS.find((option) => option.value === filters.partySize)?.label;
   return [when, budget, party].filter(Boolean).join(' · ');
+};
+
+export const mapDiscoveryFiltersToSessionFields = (
+  filters: DiscoveryFilters,
+  radiusKm: number,
+): DiscoverySessionFields => {
+  const constraints = mapDiscoveryFiltersToConstraints(filters);
+  return {
+    mood: null,
+    socialContext: null,
+    budget: filters.budget === 'flexible' ? null : filters.budget,
+    availableMinutes: constraints.availableMinutes,
+    radiusKm,
+  };
 };

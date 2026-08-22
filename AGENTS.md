@@ -10,7 +10,7 @@ Never redesign SponSays into a directory, list-first marketplace, travel browser
 
 ## Current milestone
 
-Milestones 0 and 1 are implemented and physically verified in Expo Go. Task 4A adds mock-backed search intent and compact When/Budget/Who filters to Do. SponSays now has one internal spontaneous recommendation behaviour; spontaneity is not a user setting. Real discovery providers remain out of scope.
+Milestones 0 and 1 are implemented and physically verified in Expo Go. Task 3C persists private signed-in activity through the Supabase boundary, and Task 4A adds mock-backed search intent plus compact When/Budget/Who filters. SponSays uses one internal recommendation behaviour; behaviour levels are not user settings. The credential-free Adelaide demo remains fully operational, and real discovery providers remain out of scope.
 
 ## Stack and architecture
 
@@ -30,6 +30,7 @@ Use npm only:
 
 ```bash
 npm install
+npm test
 npm run typecheck
 npm run lint
 npx expo start
@@ -92,7 +93,10 @@ Supabase Auth will own future identities. Future user tables must reference `aut
 - Demo mode must remain operational without Supabase.
 - Never weaken RLS for debugging.
 - Do not add OpenAI or Google Places yet.
-- Do not persist demo recommendations until connection verification is explicitly authorized.
+- Persist profiles, preferences and recommendation activity only for authenticated users.
+- Demo and signed-out activity must remain local and must not be written to Supabase.
+- Database failures must never block recommendation reveal, replacement, acceptance or directions.
+- Keep large Supabase queries in typed feature services rather than screens.
 
 ## Prohibited scope expansion
 

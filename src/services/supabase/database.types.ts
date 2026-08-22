@@ -1,5 +1,6 @@
-// Hand-maintained from supabase/migrations/20260821_initial_schema.sql.
-// Regenerate this file with the Supabase CLI after a live project is linked.
+// Supabase-generated-compatible shape synchronized with the repository
+// migrations. Regenerate from the live public schema after every deployed
+// change with the command documented in supabase/README.md.
 
 export type Json =
   | string
@@ -260,3 +261,66 @@ export type Database = {
     CompositeTypes: { [_ in never]: never };
   };
 };
+
+type DefaultSchema = Database[Extract<keyof Database, 'public'>];
+
+export type Tables<
+  DefaultSchemaTableNameOrOptions extends
+    | keyof (DefaultSchema['Tables'] & DefaultSchema['Views'])
+    | { schema: keyof Database },
+  TableName extends DefaultSchemaTableNameOrOptions extends { schema: keyof Database }
+    ? keyof (Database[DefaultSchemaTableNameOrOptions['schema']]['Tables'] &
+        Database[DefaultSchemaTableNameOrOptions['schema']]['Views'])
+    : never = never,
+> = DefaultSchemaTableNameOrOptions extends { schema: keyof Database }
+  ? (Database[DefaultSchemaTableNameOrOptions['schema']]['Tables'] &
+      Database[DefaultSchemaTableNameOrOptions['schema']]['Views'])[TableName] extends {
+      Row: infer Row;
+    }
+    ? Row
+    : never
+  : DefaultSchemaTableNameOrOptions extends keyof (DefaultSchema['Tables'] & DefaultSchema['Views'])
+    ? (DefaultSchema['Tables'] & DefaultSchema['Views'])[DefaultSchemaTableNameOrOptions] extends {
+        Row: infer Row;
+      }
+      ? Row
+      : never
+    : never;
+
+export type TablesInsert<
+  DefaultSchemaTableNameOrOptions extends
+    | keyof DefaultSchema['Tables']
+    | { schema: keyof Database },
+  TableName extends DefaultSchemaTableNameOrOptions extends { schema: keyof Database }
+    ? keyof Database[DefaultSchemaTableNameOrOptions['schema']]['Tables']
+    : never = never,
+> = DefaultSchemaTableNameOrOptions extends { schema: keyof Database }
+  ? Database[DefaultSchemaTableNameOrOptions['schema']]['Tables'][TableName] extends {
+      Insert: infer Insert;
+    }
+    ? Insert
+    : never
+  : DefaultSchemaTableNameOrOptions extends keyof DefaultSchema['Tables']
+    ? DefaultSchema['Tables'][DefaultSchemaTableNameOrOptions] extends { Insert: infer Insert }
+      ? Insert
+      : never
+    : never;
+
+export type TablesUpdate<
+  DefaultSchemaTableNameOrOptions extends
+    | keyof DefaultSchema['Tables']
+    | { schema: keyof Database },
+  TableName extends DefaultSchemaTableNameOrOptions extends { schema: keyof Database }
+    ? keyof Database[DefaultSchemaTableNameOrOptions['schema']]['Tables']
+    : never = never,
+> = DefaultSchemaTableNameOrOptions extends { schema: keyof Database }
+  ? Database[DefaultSchemaTableNameOrOptions['schema']]['Tables'][TableName] extends {
+      Update: infer Update;
+    }
+    ? Update
+    : never
+  : DefaultSchemaTableNameOrOptions extends keyof DefaultSchema['Tables']
+    ? DefaultSchema['Tables'][DefaultSchemaTableNameOrOptions] extends { Update: infer Update }
+      ? Update
+      : never
+    : never;

@@ -1,3 +1,3 @@
 # Service boundaries
 
-Vendor SDKs remain behind service modules so screens do not own integration details. Task 3A adds an optional Supabase client and database types under `supabase/`; it is safe when credentials are absent and does not persist demo recommendations. Places, analytics, monitoring and AI adapters remain out of scope.
+Vendor SDKs remain behind service modules so screens do not own integration details. The optional Supabase client, authenticated context helper and generated database types live under `supabase/`; feature-specific queries live with their domains. Signed-in activity persists while demo activity stays local. Places, analytics, monitoring, subscriptions and AI adapters remain out of scope.

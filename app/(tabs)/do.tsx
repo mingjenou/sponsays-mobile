@@ -20,15 +20,26 @@ import {
   createDiscoveryIntent,
   formatDiscoveryFilterSummary,
   mapDiscoveryFiltersToConstraints,
+  mapDiscoveryFiltersToSessionFields,
 } from '@/src/features/discovery/intent';
 import { DEFAULT_DISCOVERY_FILTERS } from '@/src/features/discovery/options';
 import type { DiscoveryFilters } from '@/src/features/discovery/types';
+import { useAuth } from '@/src/features/auth/useAuth';
 import {
+  CURRENT_RECOMMENDATION_BEHAVIOUR,
   makeRecommendation,
   type RecommendationContext,
   type RecommendationResult,
 } from '@/src/features/recommendations/engine';
+import {
+  createRecommendationSession,
+  markRecommendationAccepted,
+  markRecommendationRejected,
+  persistShownRecommendation,
+} from '@/src/features/recommendations/persistenceService';
+import { trackRecommendationPersistence } from '@/src/features/recommendations/persistenceReadiness';
 import { ADELAIDE_PLACES } from '@/src/mocks/places';
+import { createPersistenceId, logDataError } from '@/src/services/supabase/service';
 import { colors, radius, shadows, spacing, typography } from '@/src/theme';
 import { formatDuration } from '@/src/utils/formatDuration';
 
@@ -45,6 +56,7 @@ const formatPrice = (priceLevel?: number): string =>
   priceLevel === 0 ? 'Free' : '$'.repeat(priceLevel ?? 0) || 'Flexible';
 
 export default function DoScreen() {
+  const { user } = useAuth();
   const [query, setQuery] = useState('');
   const [filters, setFilters] = useState<DiscoveryFilters>(DEFAULT_DISCOVERY_FILTERS);
   const [filtersVisible, setFiltersVisible] = useState(false);
@@ -53,6 +65,9 @@ export default function DoScreen() {
   const [rejectedIds, setRejectedIds] = useState<string[]>([]);
   const [replacementCount, setReplacementCount] = useState(0);
   const decisionTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const persistenceQueue = useRef<Promise<void>>(Promise.resolve());
+  const persistenceSession = useRef<{ id: string; writable: boolean } | null>(null);
+  const currentRecommendationId = useRef<string | null>(null);
 
   useEffect(
     () => () => {
@@ -77,16 +92,61 @@ export default function DoScreen() {
     };
   };
 
-  const decide = (rejections = rejectedIds) => {
+  const enqueuePersistence = (operation: () => Promise<unknown>): Promise<void> => {
+    persistenceQueue.current = persistenceQueue.current
+      .then(async () => {
+        await operation();
+      })
+      .catch((error: unknown) => logDataError('persistence-queue', error));
+    return persistenceQueue.current;
+  };
+
+  const decide = (rejections = rejectedIds, rankPosition = replacementCount + 1) => {
+    const recommendationContext = buildContext(rejections);
+    const sessionFields = mapDiscoveryFiltersToSessionFields(
+      filters,
+      recommendationContext.maximumDistanceKm,
+    );
+    let session = persistenceSession.current;
+
+    if (user && !session) {
+      session = { id: createPersistenceId(), writable: true };
+      persistenceSession.current = session;
+      const capturedSession = session;
+      enqueuePersistence(async () => {
+        const result = await createRecommendationSession({
+          id: capturedSession.id,
+          ...sessionFields,
+          spontaneityMode: CURRENT_RECOMMENDATION_BEHAVIOUR,
+        });
+        if (result.error || !result.authenticated) capturedSession.writable = false;
+      });
+    }
     void Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium).catch(() => undefined);
     setStatus('deciding');
     setRecommendation(undefined);
     if (decisionTimer.current) clearTimeout(decisionTimer.current);
     decisionTimer.current = setTimeout(() => {
-      const next = makeRecommendation(ADELAIDE_PLACES, buildContext(rejections));
+      const next = makeRecommendation(ADELAIDE_PLACES, recommendationContext);
       setRecommendation(next);
       setStatus(next ? 'result' : 'empty');
       if (next) {
+        const recommendationId = user ? createPersistenceId() : null;
+        currentRecommendationId.current = recommendationId;
+        const capturedSession = session;
+        if (recommendationId && capturedSession) {
+          const capturedRecommendationId = recommendationId;
+          const persistence = enqueuePersistence(async () => {
+            if (!capturedSession.writable) return;
+            await persistShownRecommendation({
+              id: capturedRecommendationId,
+              sessionId: capturedSession.id,
+              recommendation: next,
+              rankPosition,
+            });
+          });
+          trackRecommendationPersistence(capturedRecommendationId, persistence);
+        }
         void Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success).catch(() => undefined);
       }
     }, 900);
@@ -94,6 +154,10 @@ export default function DoScreen() {
 
   const rejectRecommendation = () => {
     if (!recommendation) return;
+    const recommendationId = currentRecommendationId.current;
+    if (user && recommendationId) {
+      enqueuePersistence(() => markRecommendationRejected(recommendationId));
+    }
     const nextRejectedIds = [...rejectedIds, recommendation.place.id];
     setRejectedIds(nextRejectedIds);
 
@@ -104,23 +168,37 @@ export default function DoScreen() {
     }
 
     setReplacementCount((count) => count + 1);
-    decide(nextRejectedIds);
+    decide(nextRejectedIds, replacementCount + 2);
   };
 
   const acceptRecommendation = () => {
     if (!recommendation) return;
+    const recommendationId = currentRecommendationId.current;
+    if (user && recommendationId) {
+      enqueuePersistence(() => markRecommendationAccepted(recommendationId));
+    }
     void Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success).catch(() => undefined);
     router.push({
       pathname: '/recommendation/[id]',
-      params: { id: recommendation.place.id, reason: recommendation.reason },
+      params: {
+        id: recommendation.place.id,
+        reason: recommendation.reason,
+        ...(recommendationId ? { recommendationId } : {}),
+      },
     });
   };
 
   const resetSession = () => {
+    if (decisionTimer.current) {
+      clearTimeout(decisionTimer.current);
+      decisionTimer.current = null;
+    }
     setStatus('idle');
     setRecommendation(undefined);
     setRejectedIds([]);
     setReplacementCount(0);
+    persistenceSession.current = null;
+    currentRecommendationId.current = null;
   };
 
   if (status !== 'idle') {

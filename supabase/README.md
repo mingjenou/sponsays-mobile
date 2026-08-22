@@ -10,7 +10,11 @@ RLS is enabled on every user-data table in the initial migration. The policies c
 
 ## Migrations
 
-The files in `migrations/` are ordered database changes. `20260821_initial_schema.sql` creates the first six tables, indexes, triggers, and their security policies. Do not edit an already-applied migration; add a new timestamped migration for later changes.
+The files in `migrations/` are ordered database changes. `20260821_initial_schema.sql` creates the first six tables, indexes, triggers, and their security policies. The Task 3C migrations mirror the live legacy-policy cleanup and add one-feedback-per-recommendation uniqueness. Do not edit an already-applied migration; add a new timestamped migration for later changes.
+
+**LIVE MIGRATION REQUIRED BEFORE AUTHENTICATED FEEDBACK TEST:** `20260822_unique_recommendation_feedback.sql`
+
+Keep this release gate explicit until the migration has actually been applied to the target Supabase project. The app upserts feedback with `onConflict: 'user_id,recommendation_id'`; do not mark the migration as deployed based only on the repository file.
 
 When a Supabase project is eventually connected, a developer can apply migrations using the Supabase CLI after reviewing the target project:
 
@@ -28,4 +32,17 @@ The Expo app may receive only a Supabase project URL and publishable key through
 
 `user_preferences.default_spontaneity_mode` and historical session values remain in the schema for backward compatibility. Task 4A does not expose or update a behaviour level in the UI, and it does not destructively migrate legacy rows.
 
-Once the project is connected, regenerate `src/services/supabase/database.types.ts` from the live schema with the Supabase CLI and review the resulting diff.
+## Regenerating database types
+
+After every deployed schema change, regenerate `src/services/supabase/database.types.ts` from the live schema and review the diff:
+
+```bash
+npx supabase login
+npx supabase gen types typescript --project-id "$PROJECT_REF" --schema public > src/services/supabase/database.types.ts
+```
+
+`PROJECT_REF` is the project identifier from the Supabase dashboard URL. A personal access token belongs in the developer's local Supabase CLI session, never in the repository or Expo environment.
+
+## Security Advisor
+
+After applying migrations, review the Supabase Database Security Advisor. It should remain clean. Fix legitimate findings at the schema or policy level; never silence an advisor by disabling or weakening RLS.

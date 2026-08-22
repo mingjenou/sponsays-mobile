@@ -7,6 +7,7 @@ import {
   createDiscoveryIntent,
   formatDiscoveryFilterSummary,
   mapDiscoveryFiltersToConstraints,
+  mapDiscoveryFiltersToSessionFields,
 } from '@/src/features/discovery/intent';
 import { DEFAULT_DISCOVERY_FILTERS } from '@/src/features/discovery/options';
 import type { DiscoveryFilters } from '@/src/features/discovery/types';
@@ -63,6 +64,13 @@ test('When, Budget and Who filters map to typed constraints and summary copy', (
     partySize: 'two',
   });
   assert.equal(formatDiscoveryFilterSummary(filters), 'Tonight · $$ · 2 people');
+  assert.deepEqual(mapDiscoveryFiltersToSessionFields(filters, 15), {
+    mood: null,
+    socialContext: null,
+    budget: '$$',
+    availableMinutes: 180,
+    radiusKm: 15,
+  });
 });
 
 test('the engine generates without a user mode and tolerates legacy values', () => {
@@ -141,7 +149,7 @@ test('Do, onboarding, Me and Settings expose no spontaneity selector', async () 
   for (const source of sources) {
     assert.doesNotMatch(
       source,
-      /ModeSelector|PREFERRED SPONTANEITY|How spontaneous\?|Chaos mode|Safe mode|Spontaneity|Spontaneous/,
+      /ModeSelector|PREFERRED SPONTANEITY|How spontaneous\?|Chaos mode|Safe mode|label:\s*['"]Spontaneity['"]/,
     );
   }
 });

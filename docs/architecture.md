@@ -54,7 +54,7 @@ This validates the UX and domain boundary without pretending the local Adelaide 
 
 **Future implication**
 
-Task 4B can translate the same intent into provider requests. Party size intentionally is not overloaded into `recommendation_sessions.social_context`; a future schema change should add a dedicated representation. Existing budget/time columns can receive mapped session values after the persistence branch is integrated. The legacy `default_spontaneity_mode` column remains non-destructive and non-user-facing.
+Task 4B can translate the same intent into provider requests. Signed-in Task 4A sessions persist budget, available minutes and the radius actually used by the recommendation context. Party size intentionally is not overloaded into `recommendation_sessions.social_context`; a future schema change should add a dedicated representation. The legacy behaviour column remains non-destructive, receives only the fixed compatibility value, and is never user-facing.
 
 ## ADR-004 — No global state package in Milestone 1
 
@@ -101,3 +101,21 @@ Making authentication mandatory or trusting client-side ownership checks would e
 **Future implication**
 
 After a project is linked and the schema is applied, database types should be regenerated with the Supabase CLI. Recommendation persistence remains a separate, explicitly authorized milestone.
+
+## ADR-008 — Non-blocking persistence for signed-in activity
+
+**Decision**
+
+Keep recommendation selection local, then enqueue signed-in persistence behind typed feature services. Client-created UUIDs connect a shown recommendation to its accepted detail route without displaying database identifiers. Demo and signed-out activity remain local.
+
+**Reason**
+
+Recommendation reveal, replacement, acceptance and directions are the core experience and must not wait for the network. RLS remains the authority for ownership even though the client supplies row identifiers.
+
+**Alternative considered**
+
+Blocking navigation until every database write completed was rejected because a slow or offline connection would make the decision flow unusable.
+
+**Future implication**
+
+The local Adelaide provider can later be replaced behind the existing place model without changing persistence ownership or the Option 1A screens.
