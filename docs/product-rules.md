@@ -8,7 +8,8 @@ SponSays makes a decision instead of asking users to browse. The default flow is
 
 - Present one primary recommendation.
 - Keep **SPONSAY ME ✦** visually dominant.
-- Keep Safe, Spontaneous and Chaos visible and understandable.
+- Treat spontaneity as the product behaviour, not a level the user configures.
+- Use search intent and compact session filters to shape one recommendation without creating a result list.
 - Use a short deciding moment before revealing the result.
 - Offer **I’M IN** as the primary acceptance action.
 - Limit easy replacements; after repeated rejection, ask for a context change.

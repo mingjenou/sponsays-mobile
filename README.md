@@ -67,8 +67,8 @@ If Expo Go says the project SDK is incompatible, update Expo Go from the phone�
 
 1. Wait for the SponSays splash.
 2. Complete or skip the short demo onboarding.
-3. On **Do**, change between Safe, Spontaneous and Chaos.
-4. Tap **SPONSAY ME ✦**.
+3. On **Do**, optionally enter an idea and set compact When/Budget/Who filters.
+4. Tap **SPONSAY ME ✦** for one recommendation.
 5. Confirm one Adelaide recommendation appears.
 6. Tap **Not this one** and confirm a different recommendation appears.
 7. Tap **I’M IN**, then try the directions button and feedback.
@@ -80,12 +80,13 @@ Use npm only. Do not add yarn, pnpm or bun lockfiles.
 
 ```bash
 npm install
+npm test
 npm run typecheck
 npm run lint
 npx expo start
 ```
 
-There is no test framework in the current prototype; the local recommendation engine gets focused automated tests before real-data rollout.
+Focused tests cover discovery intent, recommendation variation, authenticated settings mapping, persistence readiness and auth error copy.
 
 ## Project map
 
@@ -135,5 +136,6 @@ Never place an OpenAI key, Google server key or Supabase service-role key in an 
 - Milestones 0 and 1: implemented and physically verified in Expo Go
 - Task 3A: optional Supabase client, email-auth boundary, database schema and RLS foundation
 - Task 3C: signed-in profiles, preferences, recommendations, Memories, favourites and feedback persistence
+- Task 4A: mock-backed idea search, compact When/Budget/Who filters and one internal recommendation behaviour
 
 The recommendation engine and Adelaide place source remain local. Google Places, OpenAI, analytics and subscriptions are intentionally not part of this milestone.

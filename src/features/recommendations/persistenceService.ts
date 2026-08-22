@@ -1,4 +1,7 @@
-import type { RecommendationResult, SpontaneityMode } from './engine';
+import type {
+  CURRENT_RECOMMENDATION_BEHAVIOUR,
+  RecommendationResult,
+} from './engine';
 import type { Tables, TablesInsert } from '@/src/services/supabase/database.types';
 import type { DataServiceResult } from '@/src/services/supabase/service';
 import {
@@ -19,7 +22,7 @@ export interface RecommendationSessionInput {
   budget: string | null;
   availableMinutes: number | null;
   radiusKm: number | null;
-  spontaneityMode: SpontaneityMode;
+  spontaneityMode: typeof CURRENT_RECOMMENDATION_BEHAVIOUR;
 }
 
 export interface RecommendationPersistenceInput {

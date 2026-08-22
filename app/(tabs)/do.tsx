@@ -2,20 +2,34 @@ import { useEffect, useRef, useState } from 'react';
 import { Ionicons } from '@expo/vector-icons';
 import * as Haptics from 'expo-haptics';
 import { router } from 'expo-router';
-import { ActivityIndicator, Pressable, StyleSheet, Text, View } from 'react-native';
+import {
+  ActivityIndicator,
+  Pressable,
+  StyleSheet,
+  Text,
+  TextInput,
+  View,
+} from 'react-native';
 import { PrimaryButton } from '@/src/components/buttons/PrimaryButton';
 import { ExperienceArtwork } from '@/src/components/cards/ExperienceArtwork';
-import { ContextChip } from '@/src/components/chips/ContextChip';
-import { ModeSelector } from '@/src/components/chips/ModeSelector';
 import { ScreenContainer } from '@/src/components/layout/ScreenContainer';
 import { BrandMark } from '@/src/components/typography/BrandMark';
 import { MAX_REPLACEMENTS_PER_SESSION } from '@/src/constants/recommendations';
+import { DiscoveryFilterModal } from '@/src/features/discovery/DiscoveryFilterModal';
+import {
+  createDiscoveryIntent,
+  formatDiscoveryFilterSummary,
+  mapDiscoveryFiltersToConstraints,
+  mapDiscoveryFiltersToSessionFields,
+} from '@/src/features/discovery/intent';
+import { DEFAULT_DISCOVERY_FILTERS } from '@/src/features/discovery/options';
+import type { DiscoveryFilters } from '@/src/features/discovery/types';
 import { useAuth } from '@/src/features/auth/useAuth';
 import {
+  CURRENT_RECOMMENDATION_BEHAVIOUR,
   makeRecommendation,
   type RecommendationContext,
   type RecommendationResult,
-  type SpontaneityMode,
 } from '@/src/features/recommendations/engine';
 import {
   createRecommendationSession,
@@ -31,14 +45,6 @@ import { formatDuration } from '@/src/utils/formatDuration';
 
 type DecisionStatus = 'idle' | 'deciding' | 'result' | 'limit' | 'empty';
 
-const CONTEXT_OPTIONS = ['Tonight', '2 hrs', '$$', 'Couple', 'Nearby'] as const;
-
-const MODE_COPY: Record<SpontaneityMode, string> = {
-  safe: 'Closer to what you know.',
-  spontaneous: 'The sweet spot.',
-  chaos: 'Push me somewhere different.',
-};
-
 const replacementCopy = (count: number): string => {
   if (count === 1) return 'Okay, another one.';
   if (count === 2) return 'One more?';
@@ -51,8 +57,9 @@ const formatPrice = (priceLevel?: number): string =>
 
 export default function DoScreen() {
   const { user } = useAuth();
-  const [mode, setMode] = useState<SpontaneityMode>('spontaneous');
-  const [selectedContext, setSelectedContext] = useState<string[]>([...CONTEXT_OPTIONS]);
+  const [query, setQuery] = useState('');
+  const [filters, setFilters] = useState<DiscoveryFilters>(DEFAULT_DISCOVERY_FILTERS);
+  const [filtersVisible, setFiltersVisible] = useState(false);
   const [status, setStatus] = useState<DecisionStatus>('idle');
   const [recommendation, setRecommendation] = useState<RecommendationResult>();
   const [rejectedIds, setRejectedIds] = useState<string[]>([]);
@@ -69,21 +76,21 @@ export default function DoScreen() {
     [],
   );
 
-  const toggleContext = (label: string) => {
-    setSelectedContext((current) =>
-      current.includes(label) ? current.filter((item) => item !== label) : [...current, label],
-    );
+  const buildContext = (rejections: string[]): RecommendationContext => {
+    const discoveryIntent = createDiscoveryIntent(query, filters);
+    const constraints = mapDiscoveryFiltersToConstraints(filters);
+    return {
+      discoveryIntent,
+      interests: ['outdoors', 'culture', 'hidden gems', 'entertainment'],
+      ...(constraints.maximumPriceLevel === undefined
+        ? {}
+        : { maximumPriceLevel: constraints.maximumPriceLevel }),
+      maximumDistanceKm: 15,
+      availableMinutes: constraints.availableMinutes,
+      partySize: constraints.partySize,
+      rejectedPlaceIds: rejections,
+    };
   };
-
-  const buildContext = (rejections: string[]): RecommendationContext => ({
-    interests: ['outdoors', 'culture', 'hidden gems', 'entertainment'],
-    socialContext: selectedContext.includes('Couple') ? 'couple' : undefined,
-    mood: selectedContext.includes('Tonight') ? 'nightlife' : undefined,
-    maximumPriceLevel: selectedContext.includes('$$') ? 2 : undefined,
-    maximumDistanceKm: selectedContext.includes('Nearby') ? 5 : 15,
-    availableMinutes: selectedContext.includes('2 hrs') ? 120 : 180,
-    rejectedPlaceIds: rejections,
-  });
 
   const enqueuePersistence = (operation: () => Promise<unknown>): Promise<void> => {
     persistenceQueue.current = persistenceQueue.current
@@ -96,6 +103,10 @@ export default function DoScreen() {
 
   const decide = (rejections = rejectedIds, rankPosition = replacementCount + 1) => {
     const recommendationContext = buildContext(rejections);
+    const sessionFields = mapDiscoveryFiltersToSessionFields(
+      filters,
+      recommendationContext.maximumDistanceKm,
+    );
     let session = persistenceSession.current;
 
     if (user && !session) {
@@ -105,25 +116,18 @@ export default function DoScreen() {
       enqueuePersistence(async () => {
         const result = await createRecommendationSession({
           id: capturedSession.id,
-          mood: recommendationContext.mood ?? null,
-          socialContext: recommendationContext.socialContext ?? null,
-          budget: recommendationContext.maximumPriceLevel === undefined
-            ? null
-            : '$'.repeat(recommendationContext.maximumPriceLevel),
-          availableMinutes: recommendationContext.availableMinutes,
-          radiusKm: recommendationContext.maximumDistanceKm,
-          spontaneityMode: mode,
+          ...sessionFields,
+          spontaneityMode: CURRENT_RECOMMENDATION_BEHAVIOUR,
         });
         if (result.error || !result.authenticated) capturedSession.writable = false;
       });
     }
-
     void Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium).catch(() => undefined);
     setStatus('deciding');
     setRecommendation(undefined);
     if (decisionTimer.current) clearTimeout(decisionTimer.current);
     decisionTimer.current = setTimeout(() => {
-      const next = makeRecommendation(ADELAIDE_PLACES, recommendationContext, mode);
+      const next = makeRecommendation(ADELAIDE_PLACES, recommendationContext);
       setRecommendation(next);
       setStatus(next ? 'result' : 'empty');
       if (next) {
@@ -238,9 +242,9 @@ export default function DoScreen() {
             <Text style={styles.messageCopy}>
               {status === 'limit'
                 ? 'We’re clearly missing it. Change one thing and I’ll make another call.'
-                : 'Relax one context choice and I’ll make another call.'}
+                : 'Try a broader idea or relax one filter and I’ll make another call.'}
             </Text>
-            <PrimaryButton label="ADJUST CONTEXT" onPress={resetSession} />
+            <PrimaryButton label="ADJUST SEARCH" onPress={resetSession} />
           </View>
         )}
       </ScreenContainer>
@@ -248,62 +252,83 @@ export default function DoScreen() {
   }
 
   return (
-    <ScreenContainer contentStyle={styles.page}>
-      <View style={styles.header}>
-        <BrandMark compact />
-        <View style={styles.locationPill}>
-          <Ionicons name="location-outline" size={14} color={colors.blueDark} />
-          <Text style={styles.locationText}>Adelaide · Demo</Text>
+    <>
+      <ScreenContainer contentStyle={styles.page}>
+        <View style={styles.header}>
+          <BrandMark compact />
+          <View style={styles.locationPill}>
+            <Ionicons name="location-outline" size={14} color={colors.blueDark} />
+            <Text style={styles.locationText}>Adelaide · Demo</Text>
+          </View>
         </View>
-      </View>
 
-      <View style={styles.hero}>
-        <Text style={styles.heroTitle}>What should we do?</Text>
-        <Text style={styles.heroCopy}>Give me the moment. I’ll make the call.</Text>
-      </View>
-
-      <View style={styles.contextSection}>
-        <Text style={styles.sectionLabel}>Your moment</Text>
-        <View style={styles.contextRow}>
-          {CONTEXT_OPTIONS.map((label) => (
-            <ContextChip
-              key={label}
-              label={label}
-              selected={selectedContext.includes(label)}
-              onPress={() => toggleContext(label)}
-            />
-          ))}
+        <View style={styles.hero}>
+          <Text style={styles.heroTitle}>What should we do?</Text>
+          <Text style={styles.heroCopy}>Give me an idea, or leave it blank and let me surprise you.</Text>
         </View>
-      </View>
 
-      <View style={styles.modeSection}>
-        <View style={styles.modeHeading}>
-          <Text style={styles.sectionLabel}>How spontaneous?</Text>
-          <Text style={styles.modeCopy}>{MODE_COPY[mode]}</Text>
+        <View style={styles.searchSection}>
+          <View style={styles.searchRow}>
+            <View style={styles.searchField}>
+              <Ionicons name="sparkles-outline" size={20} color={colors.blueDark} />
+              <TextInput
+                accessibilityLabel="Search an idea"
+                autoCapitalize="sentences"
+                enterKeyHint="go"
+                onChangeText={setQuery}
+                onSubmitEditing={() => decide()}
+                placeholder="Search an idea..."
+                placeholderTextColor={colors.charcoalMuted}
+                returnKeyType="go"
+                style={styles.searchInput}
+                value={query}
+              />
+            </View>
+            <Pressable
+              accessibilityRole="button"
+              accessibilityLabel="Filters"
+              onPress={() => setFiltersVisible(true)}
+              style={({ pressed }) => [styles.filterButton, pressed && styles.filterPressed]}
+            >
+              <Ionicons name="options-outline" size={23} color={colors.blueDark} />
+            </Pressable>
+          </View>
+          <View style={styles.filterSummary} accessibilityLabel={`Selected filters: ${formatDiscoveryFilterSummary(filters)}`}>
+            <Ionicons name="time-outline" size={15} color={colors.charcoalMuted} />
+            <Text style={styles.filterSummaryText}>{formatDiscoveryFilterSummary(filters)}</Text>
+          </View>
         </View>
-        <ModeSelector value={mode} onChange={setMode} />
-      </View>
 
-      <View style={styles.actionSection}>
-        <PrimaryButton
-          label="SPONSAY ME ✦"
-          onPress={() => decide()}
-          accessibilityHint="Ask SponSays to choose one nearby experience"
-        />
-        <Text style={styles.actionNote}>One recommendation. That’s the point.</Text>
-      </View>
+        <View style={styles.actionSection}>
+          <PrimaryButton
+            label="SPONSAY ME ✦"
+            onPress={() => decide()}
+            accessibilityHint="Ask SponSays to choose one experience from your idea and filters"
+          />
+          <Text style={styles.actionNote}>One recommendation. That’s the point.</Text>
+        </View>
 
-      <View style={styles.locationPreview}>
-        <View style={styles.locationIcon}>
-          <Ionicons name="navigate" size={18} color={colors.blueDark} />
+        <View style={styles.locationPreview}>
+          <View style={styles.locationIcon}>
+            <Ionicons name="navigate" size={18} color={colors.blueDark} />
+          </View>
+          <View style={styles.locationCopy}>
+            <Text style={styles.locationTitle}>Mock-backed ideas around Adelaide</Text>
+            <Text style={styles.locationMeta}>Real discovery providers arrive in the next milestone</Text>
+          </View>
+          <Ionicons name="checkmark-circle" size={20} color={colors.blueDark} />
         </View>
-        <View style={styles.locationCopy}>
-          <Text style={styles.locationTitle}>Finding ideas near Adelaide CBD</Text>
-          <Text style={styles.locationMeta}>Ready around Adelaide CBD</Text>
-        </View>
-        <Ionicons name="checkmark-circle" size={20} color={colors.blueDark} />
-      </View>
-    </ScreenContainer>
+      </ScreenContainer>
+      <DiscoveryFilterModal
+        filters={filters}
+        visible={filtersVisible}
+        onApply={(nextFilters) => {
+          setFilters(nextFilters);
+          setFiltersVisible(false);
+        }}
+        onClose={() => setFiltersVisible(false)}
+      />
+    </>
   );
 }
 
@@ -388,21 +413,39 @@ const styles = StyleSheet.create({
   hero: { gap: spacing.xs, marginTop: spacing.xxl },
   heroTitle: { ...typography.display, color: colors.charcoal, fontSize: 40, lineHeight: 44 },
   heroCopy: { ...typography.body, color: colors.charcoalSoft },
-  contextSection: { gap: spacing.sm, marginTop: spacing.xl },
-  sectionLabel: { ...typography.bodyStrong, color: colors.charcoal },
-  contextRow: { flexDirection: 'row', flexWrap: 'wrap', gap: spacing.xs },
-  modeSection: {
-    gap: spacing.xs,
+  searchSection: {
+    gap: spacing.sm,
     marginTop: spacing.xl,
-    padding: spacing.md,
+  },
+  searchRow: { flexDirection: 'row', alignItems: 'center', gap: spacing.sm },
+  searchField: {
+    flex: 1,
+    minHeight: 58,
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: spacing.sm,
+    paddingHorizontal: spacing.md,
     borderWidth: 1,
     borderColor: colors.border,
     borderRadius: radius.lg,
     backgroundColor: colors.surface,
+    ...shadows.card,
   },
-  modeHeading: { flexDirection: 'row', alignItems: 'baseline', justifyContent: 'space-between', gap: spacing.sm },
-  modeCopy: { ...typography.caption, color: colors.charcoalMuted, textAlign: 'right', flex: 1 },
-  actionSection: { gap: spacing.xs, marginTop: spacing.md },
+  searchInput: { ...typography.body, flex: 1, color: colors.charcoal, paddingVertical: spacing.sm },
+  filterButton: {
+    width: 58,
+    height: 58,
+    alignItems: 'center',
+    justifyContent: 'center',
+    borderWidth: 1,
+    borderColor: colors.blue,
+    borderRadius: radius.lg,
+    backgroundColor: colors.blueSoft,
+  },
+  filterPressed: { opacity: 0.72, transform: [{ scale: 0.97 }] },
+  filterSummary: { flexDirection: 'row', alignItems: 'center', gap: spacing.xs, paddingHorizontal: spacing.xxs },
+  filterSummaryText: { ...typography.caption, color: colors.charcoalSoft },
+  actionSection: { gap: spacing.xs, marginTop: spacing.lg },
   actionNote: { ...typography.caption, color: colors.charcoalMuted, textAlign: 'center' },
   locationPreview: {
     minHeight: 70,

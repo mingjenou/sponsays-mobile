@@ -1,20 +1,20 @@
 import type { PlaceCandidate } from '@/src/types/place';
-
-export type SpontaneityMode = 'safe' | 'spontaneous' | 'chaos';
+import type { DiscoveryIntent, DiscoveryPartySize } from '@/src/features/discovery/types';
 
 export interface RecommendationContext {
+  discoveryIntent: DiscoveryIntent;
   interests: string[];
-  socialContext?: string;
-  mood?: string;
   maximumPriceLevel?: number;
   maximumDistanceKm: number;
   availableMinutes: number;
+  partySize: DiscoveryPartySize;
   rejectedPlaceIds: string[];
 }
 
 export interface ScoredCandidate {
   place: PlaceCandidate;
   score: number;
+  intentMatchScore: number;
   noveltyScore: number;
 }
 

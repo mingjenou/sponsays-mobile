@@ -1,5 +1,5 @@
 import type { Tables } from '@/src/services/supabase/database.types';
-import type { SpontaneityMode } from '@/src/features/recommendations/engine';
+import type { CURRENT_RECOMMENDATION_BEHAVIOUR } from '@/src/features/recommendations/engine';
 
 export type Profile = Tables<'profiles'>;
 export type UserPreferences = Tables<'user_preferences'>;
@@ -15,5 +15,5 @@ export interface PreferenceInput {
   defaultBudget: string | null;
   defaultDistanceKm: number | null;
   defaultSocialContext: string | null;
-  defaultSpontaneityMode: SpontaneityMode;
+  defaultSpontaneityMode: typeof CURRENT_RECOMMENDATION_BEHAVIOUR;
 }

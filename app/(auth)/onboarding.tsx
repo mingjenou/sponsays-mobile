@@ -5,11 +5,10 @@ import { SafeAreaView } from 'react-native-safe-area-context';
 import { PrimaryButton } from '@/src/components/buttons/PrimaryButton';
 import { TextButton } from '@/src/components/buttons/TextButton';
 import { ContextChip } from '@/src/components/chips/ContextChip';
-import { ModeSelector } from '@/src/components/chips/ModeSelector';
 import { useAuth } from '@/src/features/auth/useAuth';
 import { saveMyPreferences } from '@/src/features/profile/preferenceService';
 import { completeMyOnboarding } from '@/src/features/profile/profileService';
-import type { SpontaneityMode } from '@/src/features/recommendations/engine';
+import { CURRENT_RECOMMENDATION_BEHAVIOUR } from '@/src/features/recommendations/engine';
 import { colors, spacing, typography } from '@/src/theme';
 
 const INTERESTS = ['Food', 'Coffee', 'Outdoors', 'Culture', 'Activities', 'Hidden gems'];
@@ -21,7 +20,6 @@ export default function OnboardingScreen() {
   const [interests, setInterests] = useState<string[]>(['Outdoors', 'Culture']);
   const [social, setSocial] = useState('Couple');
   const [budget, setBudget] = useState('$$');
-  const [mode, setMode] = useState<SpontaneityMode>('spontaneous');
   const [saving, setSaving] = useState(false);
   const [saveError, setSaveError] = useState<string>();
 
@@ -46,7 +44,7 @@ export default function OnboardingScreen() {
         defaultBudget: budget,
         defaultDistanceKm: 5,
         defaultSocialContext: social,
-        defaultSpontaneityMode: mode,
+        defaultSpontaneityMode: CURRENT_RECOMMENDATION_BEHAVIOUR,
       }),
       completeMyOnboarding(),
     ]);
@@ -117,18 +115,6 @@ export default function OnboardingScreen() {
           </View>
         </View>
 
-        <View style={styles.section}>
-          <Text style={styles.label}>PREFERRED SPONTANEITY</Text>
-          <ModeSelector value={mode} onChange={setMode} />
-          <Text style={styles.modeNote}>
-            {mode === 'safe'
-              ? 'Closer to what you know.'
-              : mode === 'chaos'
-                ? 'Push me somewhere different.'
-                : 'The sweet spot.'}
-          </Text>
-        </View>
-
         <View style={styles.actions}>
           <PrimaryButton
             disabled={saving}
@@ -167,7 +153,6 @@ const styles = StyleSheet.create({
   section: { gap: spacing.sm, marginTop: spacing.xl },
   label: { ...typography.caption, color: colors.charcoalMuted, letterSpacing: 0.9, fontSize: 11 },
   chips: { flexDirection: 'row', flexWrap: 'wrap', gap: spacing.xs },
-  modeNote: { ...typography.caption, color: colors.charcoalMuted },
   actions: { gap: spacing.sm, paddingTop: spacing.xxl },
   note: { ...typography.caption, color: colors.charcoalMuted, textAlign: 'center' },
   error: { ...typography.caption, color: colors.danger, textAlign: 'center' },

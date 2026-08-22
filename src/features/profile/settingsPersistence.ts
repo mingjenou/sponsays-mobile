@@ -1,4 +1,4 @@
-export type SettingsSpontaneityMode = 'safe' | 'spontaneous' | 'chaos';
+import { CURRENT_RECOMMENDATION_BEHAVIOUR } from '@/src/features/recommendations/engine';
 
 export interface SettingsFormValue {
   displayName: string;
@@ -8,7 +8,6 @@ export interface SettingsFormValue {
   budget: string;
   distanceKm: number;
   socialContext: string;
-  spontaneityMode: SettingsSpontaneityMode;
 }
 
 interface PersistenceResult {
@@ -26,7 +25,7 @@ export interface SettingsPersistenceGateway {
     defaultBudget: string | null;
     defaultDistanceKm: number | null;
     defaultSocialContext: string | null;
-    defaultSpontaneityMode: SettingsSpontaneityMode;
+    defaultSpontaneityMode: typeof CURRENT_RECOMMENDATION_BEHAVIOUR;
   }) => Promise<PersistenceResult>;
 }
 
@@ -50,7 +49,7 @@ export const saveSettings = async (
       defaultBudget: value.budget || null,
       defaultDistanceKm: value.distanceKm,
       defaultSocialContext: value.socialContext || null,
-      defaultSpontaneityMode: value.spontaneityMode,
+      defaultSpontaneityMode: CURRENT_RECOMMENDATION_BEHAVIOUR,
     }),
   ]);
 

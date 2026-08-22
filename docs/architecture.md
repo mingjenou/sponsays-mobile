@@ -28,19 +28,33 @@ Adding Supabase and Places immediately would make the first phone test depend on
 **Future implication**  
 Later services must normalize their data into `PlaceCandidate`, preserving the UI and recommendation engine boundary.
 
-## ADR-003 — Deterministic scoring with weighted sampling
+## ADR-003 — Interpretable scoring with controlled spontaneous sampling
 
 **Decision**  
-Hard-filter places, assign an interpretable score, then weighted-sample from a mode-specific top pool.
+Hard-filter places, assign an interpretable score, then weighted-sample from one bounded top pool.
 
 **Reason**  
-Always selecting rank one becomes repetitive; pure randomness becomes unreliable. Weighted sampling protects quality while making Spontaneous and Chaos meaningfully different.
+Always selecting rank one becomes repetitive; pure randomness becomes unreliable. Weighted sampling protects quality while allowing useful variation. Spontaneity is a property of SponSays, not a user setting.
 
 **Alternative considered**  
 AI selection was rejected for this milestone because ordinary logic is faster, cheaper, testable and does not require a secret.
 
 **Future implication**  
 Real history and feedback can be added as scoring inputs without putting ranking logic into UI components.
+
+## ADR-007 — Discovery intent before provider search
+
+**Decision**
+
+Represent the Do input as a typed `DiscoveryIntent` containing the raw query and committed When/Budget/Who session filters. Match supported keywords only against existing mock metadata in Task 4A.
+
+**Reason**
+
+This validates the UX and domain boundary without pretending the local Adelaide dataset is a live search provider. An empty query remains a valid “surprise me” request.
+
+**Future implication**
+
+Task 4B can translate the same intent into provider requests. Signed-in Task 4A sessions persist budget, available minutes and the radius actually used by the recommendation context. Party size intentionally is not overloaded into `recommendation_sessions.social_context`; a future schema change should add a dedicated representation. The legacy behaviour column remains non-destructive, receives only the fixed compatibility value, and is never user-facing.
 
 ## ADR-004 — No global state package in Milestone 1
 
@@ -88,7 +102,7 @@ Making authentication mandatory or trusting client-side ownership checks would e
 
 After a project is linked and the schema is applied, database types should be regenerated with the Supabase CLI. Recommendation persistence remains a separate, explicitly authorized milestone.
 
-## ADR-007 — Non-blocking persistence for signed-in activity
+## ADR-008 — Non-blocking persistence for signed-in activity
 
 **Decision**
 

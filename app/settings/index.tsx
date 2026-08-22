@@ -11,7 +11,6 @@ import {
 } from 'react-native';
 import { PrimaryButton } from '@/src/components/buttons/PrimaryButton';
 import { ContextChip } from '@/src/components/chips/ContextChip';
-import { ModeSelector } from '@/src/components/chips/ModeSelector';
 import { ScreenContainer } from '@/src/components/layout/ScreenContainer';
 import { useAuth } from '@/src/features/auth/useAuth';
 import { getMyPreferences, saveMyPreferences } from '@/src/features/profile/preferenceService';
@@ -19,7 +18,6 @@ import { getMyProfile, updateMyProfile } from '@/src/features/profile/profileSer
 import {
   saveSettings,
   type SettingsFormValue,
-  type SettingsSpontaneityMode,
 } from '@/src/features/profile/settingsPersistence';
 import { colors, radius, spacing, typography } from '@/src/theme';
 
@@ -37,11 +35,7 @@ const DEFAULT_SETTINGS: SettingsFormValue = {
   budget: '$$',
   distanceKm: 5,
   socialContext: 'Couple',
-  spontaneityMode: 'spontaneous',
 };
-
-const isSpontaneityMode = (value: string): value is SettingsSpontaneityMode =>
-  value === 'safe' || value === 'spontaneous' || value === 'chaos';
 
 export default function SettingsScreen() {
   const { user } = useAuth();
@@ -81,9 +75,6 @@ export default function SettingsScreen() {
               budget: preferencesResult.data.default_budget ?? current.budget,
               distanceKm: preferencesResult.data.default_distance_km ?? current.distanceKm,
               socialContext: preferencesResult.data.default_social_context ?? current.socialContext,
-              spontaneityMode: isSpontaneityMode(preferencesResult.data.default_spontaneity_mode)
-                ? preferencesResult.data.default_spontaneity_mode
-                : current.spontaneityMode,
             }
           : {}),
       }));
@@ -254,13 +245,6 @@ export default function SettingsScreen() {
             />
           ))}
         </ChipGroup>
-      </SettingsSection>
-
-      <SettingsSection title="PREFERRED SPONTANEITY">
-        <ModeSelector
-          value={settings.spontaneityMode}
-          onChange={(spontaneityMode) => setSettings((current) => ({ ...current, spontaneityMode }))}
-        />
       </SettingsSection>
 
       <View style={styles.actions}>

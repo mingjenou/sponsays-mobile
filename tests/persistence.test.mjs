@@ -15,7 +15,6 @@ const settings = {
   budget: '$$',
   distanceKm: 10,
   socialContext: 'Friends',
-  spontaneityMode: 'chaos',
 };
 
 test('signed-in Settings maps and saves profile and preference fields', async () => {
@@ -43,7 +42,7 @@ test('signed-in Settings maps and saves profile and preference fields', async ()
     defaultBudget: '$$',
     defaultDistanceKm: 10,
     defaultSocialContext: 'Friends',
-    defaultSpontaneityMode: 'chaos',
+    defaultSpontaneityMode: 'spontaneous',
   });
 });
 

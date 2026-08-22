@@ -13,7 +13,6 @@ import { colors, radius, spacing, typography } from '@/src/theme';
 
 const VIBE = [
   { icon: 'heart-outline' as const, label: 'Interests', value: 'Outdoors, Culture +2' },
-  { icon: 'sparkles-outline' as const, label: 'Spontaneity', value: 'Spontaneous' },
   { icon: 'wallet-outline' as const, label: 'Typical budget', value: '$$' },
   { icon: 'navigate-outline' as const, label: 'Travel distance', value: 'Nearby' },
 ];
@@ -66,11 +65,6 @@ export default function MeScreen() {
         icon: 'heart-outline' as const,
         label: 'Interests',
         value: formatList(preferences?.interests),
-      },
-      {
-        icon: 'sparkles-outline' as const,
-        label: 'Spontaneity',
-        value: titleCase(preferences?.default_spontaneity_mode),
       },
       {
         icon: 'wallet-outline' as const,
@@ -171,9 +165,6 @@ export default function MeScreen() {
     </ScreenContainer>
   );
 }
-
-const titleCase = (value?: string | null): string =>
-  value ? `${value.slice(0, 1).toUpperCase()}${value.slice(1)}` : 'Not set';
 
 const formatList = (values?: string[] | null): string => {
   if (!values || values.length === 0) return 'Not set';
