@@ -67,8 +67,8 @@ If Expo Go says the project SDK is incompatible, update Expo Go from the phone�
 
 1. Wait for the SponSays splash.
 2. Complete or skip the short demo onboarding.
-3. On **Do**, change between Safe, Spontaneous and Chaos.
-4. Tap **SPONSAY ME ✦**.
+3. On **Do**, optionally enter an idea and set compact When/Budget/Who filters.
+4. Tap **SPONSAY ME ✦** for one recommendation.
 5. Confirm one Adelaide recommendation appears.
 6. Tap **Not this one** and confirm a different recommendation appears.
 7. Tap **I’M IN**, then try the directions button and feedback.

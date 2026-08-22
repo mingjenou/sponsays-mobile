@@ -1,6 +1,7 @@
 import type { PlaceCandidate } from '@/src/types/place';
-import { BASE_WEIGHTS, MODE_CONFIG } from './weights';
-import type { RecommendationContext, ScoredCandidate, SpontaneityMode } from './types';
+import { matchDiscoveryIntent } from '@/src/features/discovery/matching';
+import { BASE_WEIGHTS, SPONTANEOUS_CONFIG } from './weights';
+import type { RecommendationContext, ScoredCandidate } from './types';
 
 const clamp01 = (value: number): number => Math.max(0, Math.min(1, value));
 
@@ -13,11 +14,9 @@ const qualityScore = (place: PlaceCandidate): number => {
 export const scoreCandidate = (
   place: PlaceCandidate,
   context: RecommendationContext,
-  mode: SpontaneityMode,
+  random: () => number = Math.random,
 ): ScoredCandidate => {
-  const requestedTags = [...context.interests, context.socialContext, context.mood].filter(
-    (tag): tag is string => Boolean(tag),
-  );
+  const requestedTags = context.interests;
   const matches = requestedTags.filter((tag) => place.tags.includes(tag.toLowerCase())).length;
   const interest = requestedTags.length === 0 ? 0.65 : clamp01(matches / Math.min(requestedTags.length, 3));
   const distance = clamp01(1 - (place.distanceKm ?? context.maximumDistanceKm) / context.maximumDistanceKm);
@@ -27,17 +26,18 @@ export const scoreCandidate = (
       : clamp01(1 - Math.abs(context.maximumPriceLevel - (place.priceLevel ?? 0)) / 4);
   const noveltyScore = place.tags.includes('hidden gems') ? 1 : place.reviewCount && place.reviewCount < 1000 ? 0.8 : 0.55;
   const behaviour = interest * 0.75 + 0.2;
-  const controlledSpontaneity = Math.random();
-  const modeConfig = MODE_CONFIG[mode];
+  const controlledSpontaneity = random();
+  const intentMatchScore = matchDiscoveryIntent(place, context.discoveryIntent);
 
   const score =
+    intentMatchScore * BASE_WEIGHTS.discoveryIntent +
     interest * BASE_WEIGHTS.interest +
     distance * BASE_WEIGHTS.distance +
     budget * BASE_WEIGHTS.budget +
     qualityScore(place) * BASE_WEIGHTS.quality +
     behaviour * BASE_WEIGHTS.behaviour +
-    clamp01(noveltyScore * modeConfig.noveltyMultiplier) * BASE_WEIGHTS.novelty +
+    clamp01(noveltyScore * SPONTANEOUS_CONFIG.noveltyMultiplier) * BASE_WEIGHTS.novelty +
     controlledSpontaneity * BASE_WEIGHTS.spontaneity;
 
-  return { place, score, noveltyScore };
+  return { place, score, intentMatchScore, noveltyScore };
 };

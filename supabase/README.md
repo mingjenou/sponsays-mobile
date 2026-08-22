@@ -26,4 +26,6 @@ The founder does not need to run these commands for the current demo. A develope
 
 The Expo app may receive only a Supabase project URL and publishable key through `EXPO_PUBLIC_` variables. A service-role key bypasses RLS and must remain server-only. It must never be placed in this repository, an `.env` used by Expo, or any mobile application code.
 
+`user_preferences.default_spontaneity_mode` and historical session values remain in the schema for backward compatibility. Task 4A does not expose or update a behaviour level in the UI, and it does not destructively migrate legacy rows.
+
 Once the project is connected, regenerate `src/services/supabase/database.types.ts` from the live schema with the Supabase CLI and review the resulting diff.

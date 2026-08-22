@@ -5,9 +5,10 @@ The engine lives outside the UI at `src/features/recommendations/engine/`.
 ```text
 PlaceCandidate[]
   → hard filters
+  → mock intent matching
   → interpretable scores
   → ranked eligible pool
-  → mode-specific weighted sampling
+  → controlled spontaneous weighted sampling
   → one RecommendationResult
 ```
 
@@ -19,21 +20,22 @@ A candidate is removed if it is closed, has invalid coordinates, exceeds the cho
 
 The initial centrally configured weights are:
 
-- interest match: 25%
-- distance: 15%
+- discovery intent match: 35%
+- saved/demo interest match: 18%
+- distance: 12%
 - budget: 10%
-- quality: 15%
-- behaviour proxy: 15%
+- quality: 12%
+- behaviour proxy: 6%
 - novelty: 10%
-- controlled spontaneity: 10%
+- controlled spontaneity: 7%
+
+Task 4A rebalances these weights to add a strong discovery-intent signal while retaining distance, budget, quality, novelty and bounded randomness. The query matcher uses only existing mock name/category/tag metadata. If no supported keyword is found, selection falls back to the normal recommendation score.
 
 The behaviour score is only a transparent interest proxy in the local demo. It must be replaced with consent-respecting history signals after persistence exists.
 
-## Modes
+## One product behaviour
 
-- **Safe:** smaller pool and stronger bias toward the highest score.
-- **Spontaneous:** balanced pool, novelty and randomness.
-- **Chaos:** larger eligible pool and more novelty, while preserving hard constraints.
+SponSays uses one internal spontaneous configuration. There is no user-facing behaviour level. Historical `safe`, `spontaneous` and `chaos` database values remain valid legacy data but are ignored by the current UI.
 
 ## Replacements
 
@@ -41,4 +43,4 @@ Rejected place IDs are excluded for the rest of the current decision session. Af
 
 ## Future testing
 
-Before real Places data ships, add focused tests covering each hard filter, score ordering, mode pool size, rejection cooldown and the replacement cap. Inject a seeded random function at that point so stochastic behaviour is repeatable in tests.
+Focused tests cover intent preservation, filter mapping, legacy-mode compatibility, controlled variation, keyword influence and rejection cooldown. The engine accepts an injected random function for repeatable tests while production uses `Math.random`.

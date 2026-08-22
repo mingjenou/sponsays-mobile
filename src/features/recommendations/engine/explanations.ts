@@ -1,9 +1,9 @@
-import type { ScoredCandidate, SpontaneityMode } from './types';
+import type { ScoredCandidate } from './types';
 
-export const buildExplanation = (candidate: ScoredCandidate, mode: SpontaneityMode): string => {
+export const buildExplanation = (candidate: ScoredCandidate): string => {
   const { place } = candidate;
-  if (mode === 'chaos') {
-    return `A little outside the usual, but still a genuinely good call for right now.`;
+  if (candidate.intentMatchScore > 0) {
+    return `It fits the idea you gave us, works for the moment, and is ready for a real-world test.`;
   }
   if (place.priceLevel === 0) {
     return `Easy on the budget, close enough to do now, and different enough to feel worthwhile.`;

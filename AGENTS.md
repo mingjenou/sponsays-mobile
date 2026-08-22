@@ -10,7 +10,7 @@ Never redesign SponSays into a directory, list-first marketplace, travel browser
 
 ## Current milestone
 
-Milestones 0 and 1 are implemented and physically verified in Expo Go. Task 3A adds an optional Supabase client, Auth boundary, database migration and RLS foundation. The credential-free Adelaide demo remains the default; recommendation persistence is not connected yet.
+Milestones 0 and 1 are implemented and physically verified in Expo Go. Task 4A adds mock-backed search intent and compact When/Budget/Who filters to Do. SponSays now has one internal spontaneous recommendation behaviour; spontaneity is not a user setting. Real discovery providers remain out of scope.
 
 ## Stack and architecture
 
@@ -45,7 +45,7 @@ For each meaningful change: build, type-check, run, test, fix, and confirm worki
 Test the founder journey after navigation or recommendation changes:
 
 ```text
-splash → welcome/onboarding → Do → mode → SPONSAY ME
+splash → welcome/onboarding → Do → idea/filters → SPONSAY ME
 → one recommendation → replacement or I’M IN → action
 ```
 
@@ -70,8 +70,8 @@ Do not scatter hard-coded design values through screens. Extend the theme tokens
 
 1. Apply hard filters first: open, valid coordinates, distance, time, budget and rejected-place exclusion.
 2. Score eligible candidates with centrally defined weights.
-3. Select from a mode-sized top pool using weighted randomness.
-4. Safe narrows uncertainty; Spontaneous balances fit and novelty; Chaos increases novelty without violating constraints.
+3. Select from a bounded top pool using weighted randomness.
+4. Use one controlled spontaneous sampling configuration; vary good candidates without exposing behaviour levels.
 5. Never return the same rejected place in the current session.
 6. Limit easy replacements to `MAX_REPLACEMENTS_PER_SESSION`.
 7. Explain the choice concisely with deterministic copy; do not call AI for simple sentences.

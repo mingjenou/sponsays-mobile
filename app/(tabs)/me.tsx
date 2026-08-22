@@ -7,7 +7,6 @@ import { colors, radius, spacing, typography } from '@/src/theme';
 
 const VIBE = [
   { icon: 'heart-outline' as const, label: 'Interests', value: 'Outdoors, Culture +2' },
-  { icon: 'sparkles-outline' as const, label: 'Spontaneity', value: 'Spontaneous' },
   { icon: 'wallet-outline' as const, label: 'Typical budget', value: '$$' },
   { icon: 'navigate-outline' as const, label: 'Travel distance', value: 'Nearby' },
 ];
