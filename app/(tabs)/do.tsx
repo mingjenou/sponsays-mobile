@@ -17,6 +17,10 @@ import { BrandMark } from '@/src/components/typography/BrandMark';
 import { MAX_REPLACEMENTS_PER_SESSION } from '@/src/constants/recommendations';
 import { DiscoveryFilterModal } from '@/src/features/discovery/DiscoveryFilterModal';
 import {
+  createAuthDiscoveryReset,
+  getDiscoveryProviderMode,
+} from '@/src/features/discovery/authDiscoveryState';
+import {
   createDiscoveryIntent,
   formatDiscoveryFilterSummary,
   mapDiscoveryFiltersToConstraints,
@@ -67,6 +71,7 @@ const formatTime = (minutes?: number): string =>
 
 export default function DoScreen() {
   const { user } = useAuth();
+  const authIdentity = user?.id ?? null;
   const [query, setQuery] = useState('');
   const [filters, setFilters] = useState<DiscoveryFilters>(DEFAULT_DISCOVERY_FILTERS);
   const [filtersVisible, setFiltersVisible] = useState(false);
@@ -83,6 +88,28 @@ export default function DoScreen() {
   const persistenceQueue = useRef<Promise<void>>(Promise.resolve());
   const persistenceSession = useRef<{ id: string; writable: boolean } | null>(null);
   const currentRecommendationId = useRef<string | null>(null);
+  const authGeneration = useRef(0);
+  const activeAuthIdentity = useRef<string | null>(authIdentity);
+
+  useEffect(() => {
+    const reset = createAuthDiscoveryReset(authIdentity);
+    authGeneration.current += 1;
+    activeAuthIdentity.current = authIdentity;
+    if (decisionTimer.current) clearTimeout(decisionTimer.current);
+    decisionTimer.current = null;
+    candidatePool.current = reset.candidatePool;
+    discoveryLocation.current = reset.discoveryLocation;
+    persistenceSession.current = reset.persistenceSession;
+    currentRecommendationId.current = reset.currentRecommendationId;
+    persistenceQueue.current = Promise.resolve();
+    setRejectedIds(reset.rejectedIds);
+    setReplacementCount(reset.replacementCount);
+    setProviderMessage(reset.providerMessage);
+    providerHealth.current = reset.providerHealth;
+    setRecommendation(reset.recommendation);
+    setStatus(reset.status);
+    setLocationLabel(reset.locationLabel);
+  }, [authIdentity]);
 
   useEffect(
     () => () => {
@@ -109,8 +136,10 @@ export default function DoScreen() {
   };
 
   const enqueuePersistence = (operation: () => Promise<unknown>): Promise<void> => {
+    const operationGeneration = authGeneration.current;
     persistenceQueue.current = persistenceQueue.current
       .then(async () => {
+        if (authGeneration.current !== operationGeneration) return;
         await operation();
       })
       .catch((error: unknown) => logDataError('persistence-queue', error));
@@ -118,6 +147,11 @@ export default function DoScreen() {
   };
 
   const decide = async (rejections = rejectedIds, rankPosition = replacementCount + 1) => {
+    const decisionAuthIdentity = authIdentity;
+    const decisionGeneration = authGeneration.current;
+    const authChanged = () =>
+      authGeneration.current !== decisionGeneration ||
+      activeAuthIdentity.current !== decisionAuthIdentity;
     const recommendationContext = buildContext(rejections);
     void Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium).catch(() => undefined);
     setStatus('deciding');
@@ -126,8 +160,9 @@ export default function DoScreen() {
 
     let candidates = candidatePool.current;
     if (!candidates) {
-      if (user) {
+      if (getDiscoveryProviderMode(decisionAuthIdentity) === 'live') {
         const location = await getDiscoveryLocation();
+        if (authChanged()) return;
         discoveryLocation.current = location;
         setLocationLabel(location.label);
         const live = await discoverRealPlaces({
@@ -140,6 +175,7 @@ export default function DoScreen() {
           partySize: filters.partySize,
           maxCandidates: 12,
         });
+        if (authChanged()) return;
         providerHealth.current = live.health;
         if (live.candidates.length > 0) {
           candidates = live.candidates;
@@ -178,6 +214,7 @@ export default function DoScreen() {
     }
 
     decisionTimer.current = setTimeout(() => {
+      if (authChanged()) return;
       const next = makeRecommendation(candidates ?? ADELAIDE_PLACES, recommendationContext);
       setRecommendation(next);
       setStatus(next ? 'result' : 'empty');

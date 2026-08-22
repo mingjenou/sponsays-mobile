@@ -5,6 +5,10 @@ import { dirname, resolve } from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { getInitialRoute } from '../src/features/auth/entryRoute';
 import {
+  createAuthDiscoveryReset,
+  getDiscoveryProviderMode,
+} from '../src/features/discovery/authDiscoveryState';
+import {
   MAX_CANDIDATES,
   MAX_QUERY_LENGTH,
   normalizeGoogleTextSearchResponse,
@@ -170,4 +174,45 @@ test('normal entry routes skip legacy onboarding and Settings remains linked fro
   assert.doesNotMatch(signIn, /onboarding_complete|\/\(auth\)\/onboarding/);
   assert.doesNotMatch(splash, /onboarding_complete|\/\(auth\)\/onboarding/);
   assert.match(me, /\/settings/);
+});
+
+test('auth identity change resets every discovery-session value', () => {
+  const reset = createAuthDiscoveryReset('signed-in-user');
+  assert.equal(reset.candidatePool, null);
+  assert.equal(reset.discoveryLocation, null);
+  assert.equal(reset.persistenceSession, null);
+  assert.equal(reset.currentRecommendationId, null);
+  assert.deepEqual(reset.rejectedIds, []);
+  assert.equal(reset.replacementCount, 0);
+  assert.equal(reset.providerMessage, undefined);
+  assert.equal(reset.providerHealth, 'HEALTHY');
+  assert.equal(reset.recommendation, undefined);
+  assert.equal(reset.status, 'idle');
+  assert.equal(reset.locationLabel, 'Location used when you SponSay');
+});
+
+test('demo candidate pool cannot survive sign-in and next discovery uses live mode', () => {
+  const signedInReset = createAuthDiscoveryReset('signed-in-user');
+  assert.equal(signedInReset.candidatePool, null);
+  assert.equal(signedInReset.providerMode, 'live');
+  assert.equal(getDiscoveryProviderMode('signed-in-user'), 'live');
+});
+
+test('sign-out resets to demo mode and Adelaide label', () => {
+  const signedOutReset = createAuthDiscoveryReset(null);
+  assert.equal(signedOutReset.candidatePool, null);
+  assert.equal(signedOutReset.providerMode, 'demo');
+  assert.equal(signedOutReset.locationLabel, 'Adelaide · Demo');
+  assert.equal(getDiscoveryProviderMode(null), 'demo');
+});
+
+test('auth reset effect preserves typed query and committed filters', async () => {
+  const testDirectory = dirname(fileURLToPath(import.meta.url));
+  const doScreen = await readFile(resolve(testDirectory, '../app/(tabs)/do.tsx'), 'utf8');
+  const effectStart = doScreen.indexOf('const reset = createAuthDiscoveryReset(authIdentity);');
+  const effectEnd = doScreen.indexOf('}, [authIdentity]);', effectStart);
+  assert.ok(effectStart >= 0 && effectEnd > effectStart);
+  const authResetEffect = doScreen.slice(effectStart, effectEnd);
+  assert.doesNotMatch(authResetEffect, /setQuery|setFilters/);
+  assert.match(authResetEffect, /candidatePool\.current = reset\.candidatePool/);
 });
