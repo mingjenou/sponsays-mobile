@@ -64,18 +64,19 @@ test('DiscoveryIntent preserves raw query and normalizes only its matching form'
 });
 
 test('When, Budget and Who filters map to typed constraints and summary copy', () => {
+  const requestedDateTime = buildLocalDateTimeIso('2026-08-24', '19:00');
   const filters: DiscoveryFilters = {
-    requestedDateTime: '2026-08-24T09:30:00.000Z',
+    requestedDateTime,
     budget: '$$',
     partySize: 'two',
   };
   assert.deepEqual(mapDiscoveryFiltersToConstraints(filters), {
-    requestedDateTime: '2026-08-24T09:30:00.000Z',
+    requestedDateTime,
     maximumPriceLevel: 2,
     partySize: 'two',
   });
   assert.equal(
-    formatDiscoveryFilterSummary(filters, new Date('2026-08-22T02:00:00.000Z')),
+    formatDiscoveryFilterSummary(filters, new Date(2026, 7, 22, 12)),
     'Mon 24 7:00 PM · $$ · 2 people',
   );
   assert.deepEqual(mapDiscoveryFiltersToSessionFields(filters, 15), {
@@ -83,7 +84,7 @@ test('When, Budget and Who filters map to typed constraints and summary copy', (
     socialContext: null,
     budget: '$$',
     availableMinutes: null,
-    requestedDateTime: '2026-08-24T09:30:00.000Z',
+    requestedDateTime,
     radiusKm: 15,
   });
 });
