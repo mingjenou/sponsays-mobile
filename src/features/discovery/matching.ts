@@ -65,7 +65,7 @@ export const matchDiscoveryIntent = (
   const terms = getDiscoveryCandidateTerms(intent);
   if (terms.length === 0) return 0;
 
-  const candidateText = [candidate.name, candidate.category, ...candidate.tags]
+  const candidateText = [candidate.name, candidate.category ?? '', ...candidate.tags]
     .join(' ')
     .toLowerCase();
   const matches = terms.filter((term) => candidateText.includes(term)).length;
@@ -76,6 +76,28 @@ export const preferDiscoveryIntentMatches = (
   candidates: PlaceCandidate[],
   intent: DiscoveryIntent,
 ): PlaceCandidate[] => {
+  const query = intent.normalizedQuery;
+  const requiresHiking = /\b(hike|hiking|trail|walk|walking)\b/.test(query);
+  const requiresVegetarian = /\b(vegetarian|veggie|vegan)\b/.test(query);
+  const requiresLiveMusic = /\b(live music|concert|gig)\b/.test(query);
+  if (requiresHiking || requiresVegetarian || requiresLiveMusic) {
+    return candidates.filter((candidate) => {
+      const metadata = new Set([
+        ...candidate.tags,
+        ...(candidate.types ?? []).map((type) => type.replaceAll('_', ' ')),
+      ]);
+      if (requiresHiking) {
+        return ['hiking area', 'park', 'national park', 'botanical garden', 'outdoors', 'walking', 'adventure']
+          .some((term) => metadata.has(term));
+      }
+      if (requiresVegetarian) {
+        return candidate.servesVegetarianFood === true || metadata.has('vegetarian') || metadata.has('vegetarian restaurant');
+      }
+      return candidate.liveMusic === true || ['live music', 'live music venue', 'concert hall', 'performing arts theater', 'night club', 'nightlife', 'entertainment', 'culture']
+        .some((term) => metadata.has(term));
+    });
+  }
+
   const matchedCandidates = candidates.filter(
     (candidate) => matchDiscoveryIntent(candidate, intent) > 0,
   );

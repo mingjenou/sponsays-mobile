@@ -2,13 +2,18 @@ import { useEffect } from 'react';
 import { router } from 'expo-router';
 import { StyleSheet, Text, View } from 'react-native';
 import { BrandMark } from '@/src/components/typography/BrandMark';
+import { getInitialRoute } from '@/src/features/auth/entryRoute';
+import { useAuth } from '@/src/features/auth/useAuth';
 import { colors, spacing, typography } from '@/src/theme';
 
 export default function SplashRoute() {
+  const { loading, user } = useAuth();
+
   useEffect(() => {
-    const timer = setTimeout(() => router.replace('/(auth)/welcome'), 1400);
+    if (loading) return;
+    const timer = setTimeout(() => router.replace(getInitialRoute(Boolean(user))), 1400);
     return () => clearTimeout(timer);
-  }, []);
+  }, [loading, user]);
 
   return (
     <View style={styles.container}>

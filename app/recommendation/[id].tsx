@@ -20,6 +20,7 @@ import {
   saveRecommendationFeedback,
 } from '@/src/features/feedback/feedbackService';
 import { waitForRecommendationPersistence } from '@/src/features/recommendations/persistenceReadiness';
+import { getCachedRecommendation } from '@/src/features/recommendations/recommendationCache';
 import { findMockPlace } from '@/src/mocks/places';
 import { colors, radius, shadows, spacing, typography } from '@/src/theme';
 import { formatDuration } from '@/src/utils/formatDuration';
@@ -31,7 +32,8 @@ export default function RecommendationActionScreen() {
     reason?: string;
     recommendationId?: string;
   }>();
-  const place = findMockPlace(id);
+  const cachedRecommendation = getCachedRecommendation(id);
+  const place = cachedRecommendation?.place ?? findMockPlace(id);
   const [feedback, setFeedback] = useState<'positive' | 'negative'>();
   const [saved, setSaved] = useState(false);
   const [savingFavourite, setSavingFavourite] = useState(false);
@@ -42,7 +44,7 @@ export default function RecommendationActionScreen() {
     if (!user || !place) return;
 
     let mounted = true;
-    void getFavourite(place.id).then((result) => {
+    void getFavourite(place.providerId ?? place.id).then((result) => {
       if (mounted && !result.error) setSaved(Boolean(result.data));
     });
     if (recommendationId) {
@@ -68,10 +70,11 @@ export default function RecommendationActionScreen() {
 
   const openDirections = async () => {
     void Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium).catch(() => undefined);
-    const encodedAddress = encodeURIComponent(`${place.name}, ${place.address}`);
+    const coordinates = `${place.latitude},${place.longitude}`;
+    const encodedDestination = encodeURIComponent(coordinates);
     const url = Platform.OS === 'ios'
-      ? `http://maps.apple.com/?daddr=${encodedAddress}`
-      : `https://www.google.com/maps/dir/?api=1&destination=${encodedAddress}`;
+      ? `http://maps.apple.com/?daddr=${encodedDestination}`
+      : place.googleMapsUri ?? `https://www.google.com/maps/dir/?api=1&destination=${encodedDestination}`;
     if (await Linking.canOpenURL(url)) await Linking.openURL(url);
   };
 
@@ -85,8 +88,8 @@ export default function RecommendationActionScreen() {
 
     setSavingFavourite(true);
     const result = nextSaved
-      ? await saveFavourite(place.id, place.name)
-      : await removeFavourite(place.id);
+      ? await saveFavourite(place.providerId ?? place.id, place.name)
+      : await removeFavourite(place.providerId ?? place.id);
     setSavingFavourite(false);
 
     if (result.error) {
@@ -108,7 +111,9 @@ export default function RecommendationActionScreen() {
     });
   };
 
-  const price = place.priceLevel === 0 ? 'Free' : '$'.repeat(place.priceLevel ?? 0);
+  const price = place.priceLevel === undefined
+    ? 'Not provided'
+    : place.priceLevel === 0 ? 'Free' : '$'.repeat(place.priceLevel);
   const explanation =
     reason ?? 'Close enough to go now, within the moment, and different enough to feel worthwhile.';
 
@@ -134,16 +139,16 @@ export default function RecommendationActionScreen() {
       <View style={styles.sheet}>
         <Text style={styles.commitment}>YOU’RE GOING.</Text>
         <Text style={styles.title}>{place.name}</Text>
-        <Text style={styles.subtitle}>{place.address}</Text>
+        <Text style={styles.subtitle}>{place.address ?? 'Address not provided'}</Text>
         <View style={styles.tags}>
-          <View style={styles.tag}><Text style={styles.tagText}>{place.category}</Text></View>
+          <View style={styles.tag}><Text style={styles.tagText}>{place.category ?? 'Place'}</Text></View>
         </View>
 
         <View style={styles.detailsCard}>
-          <DetailRow icon="time-outline" label="Time" value={formatDuration(place.estimatedDurationMinutes ?? 60)} />
+          <DetailRow icon="time-outline" label="Time" value={place.estimatedDurationMinutes === undefined ? 'Not provided' : formatDuration(place.estimatedDurationMinutes)} />
           <DetailRow icon="cash-outline" label="Cost" value={price} border />
-          <DetailRow icon="navigate-outline" label="Distance" value={`${place.distanceKm ?? '—'} km`} border />
-          <DetailRow icon="pricetag-outline" label="Category" value={place.category} border />
+          <DetailRow icon="navigate-outline" label="Distance" value={place.distanceKm === undefined ? 'Not provided' : `${place.distanceKm} km`} border />
+          <DetailRow icon="pricetag-outline" label="Category" value={place.category ?? 'Not provided'} border />
         </View>
 
         <View style={styles.whyCard}>

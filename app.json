@@ -28,6 +28,12 @@
         {
           "backgroundColor": "#FFFCF7"
         }
+      ],
+      [
+        "expo-location",
+        {
+          "locationWhenInUsePermission": "Allow SponSays to use your location once to find relevant places nearby."
+        }
       ]
     ],
     "experiments": {

@@ -2,7 +2,7 @@
 
 SponSays is a mobile decision service: give it a little context, receive one useful recommendation, and go do it. It is intentionally not a directory or an endless list of nearby places.
 
-This repository contains the Expo QR prototype plus optional Supabase accounts and private user-data persistence. It uses curated Adelaide recommendations and still works without an account, an `.env` file, or any external service credentials.
+This repository contains the Expo QR prototype plus optional Supabase accounts, private user-data persistence and authenticated real-place discovery. It still works without an account, an `.env` file or external credentials by using the curated Adelaide demo.
 
 ## RUN SPONSAYS ON YOUR PHONE
 
@@ -66,7 +66,7 @@ If Expo Go says the project SDK is incompatible, update Expo Go from the phone�
 ## What to test
 
 1. Wait for the SponSays splash.
-2. Complete or skip the short demo onboarding.
+2. Choose demo mode and confirm **Do** opens directly—there is no required preference-selection screen.
 3. On **Do**, optionally enter an idea and set compact When/Budget/Who filters.
 4. Tap **SPONSAY ME ✦** for one recommendation.
 5. Confirm one Adelaide recommendation appears.
@@ -92,7 +92,7 @@ Focused tests cover discovery intent, recommendation variation, authenticated se
 
 ```text
 app/                         Expo Router screens and navigation
-  (auth)/                    Welcome, demo onboarding and optional email auth
+  (auth)/                    Welcome, optional email auth and a legacy compatibility onboarding route
   (tabs)/                    Do, Around Me, Memories and Me
   recommendation/[id].tsx    Accepted recommendation action view
 src/
@@ -102,18 +102,19 @@ src/
   features/memories/         Private accepted-recommendation history
   features/favourites/       Save-for-later persistence
   features/feedback/         One feedback answer per recommendation
-  features/recommendations/  Credential-free recommendation rules
+  features/discovery/        Provider contracts, translation, location and live discovery boundary
+  features/recommendations/  Provider-independent recommendation rules and detail cache
   mocks/                     Curated Adelaide demo places
   theme/                     Brand colours, spacing and typography
   types/                     Shared domain types
   services/supabase/         Safe client configuration and database types
 docs/                        Architecture, product and testing notes
-supabase/                    Database migrations and setup documentation
+supabase/                    Database migrations and authenticated Edge Function
 ```
 
-## OPTIONAL SUPABASE SETUP
+## OPTIONAL SUPABASE AND GOOGLE SETUP
 
-No setup is required to run or test the SponSays demo. When Supabase is absent—or the user is signed out—the same Adelaide mock journey remains available and no demo activity is written remotely.
+No setup is required to run or test the SponSays demo. When Supabase is absent—or the user is signed out—the same Adelaide mock journey remains available and no demo activity is written remotely. Real Google discovery is initially restricted to authenticated development users.
 
 For future real-account testing, create a local `.env` file in the repository root. Do not commit it. It should contain only the mobile-safe project settings supplied by Supabase:
 
@@ -123,19 +124,20 @@ EXPO_PUBLIC_SUPABASE_URL=
 EXPO_PUBLIC_SUPABASE_PUBLISHABLE_KEY=
 ```
 
-Leave the values blank until a project is ready. Restart Expo after changing environment variables. The database migration and founder-friendly application instructions are documented in `supabase/README.md`.
+Leave the values blank until a project is ready. Restart Expo after changing environment variables. Database instructions are in `supabase/README.md`; the complete live provider steps are in [`docs/google-places-setup.md`](docs/google-places-setup.md).
 
 ## Configuration and secrets
 
 The demo needs no `.env` file. `.env.example` contains blank placeholders only, while `.gitignore` keeps local environment files out of version control.
 
-Never place an OpenAI key, Google server key or Supabase service-role key in an `EXPO_PUBLIC_` variable. Those secrets must stay on a server in later milestones.
+Never place an OpenAI key, Google server key or Supabase service-role key in an `EXPO_PUBLIC_` variable. The Google key belongs only in the deployed Edge Function secret store; service-role and OpenAI keys are not used by this milestone.
 
 ## Current milestone
 
 - Milestones 0 and 1: implemented and physically verified in Expo Go
 - Task 3A: optional Supabase client, email-auth boundary, database schema and RLS foundation
 - Task 3C: signed-in profiles, preferences, recommendations, Memories, favourites and feedback persistence
-- Task 4A: mock-backed idea search, compact When/Budget/Who filters and one internal recommendation behaviour
+- Task 4A: idea search, compact When/Budget/Who filters and one internal recommendation behaviour
+- Task 4B: direct entry plus authenticated server-side Google Places Text Search (New), with explicit demo fallbacks
 
-The recommendation engine and Adelaide place source remain local. Google Places, OpenAI, analytics and subscriptions are intentionally not part of this milestone.
+Google supplies bounded real candidate pools; the SponSays engine still chooses one result. Google Places does not prove that a live event is currently occurring. OpenAI, event sources, analytics and subscriptions remain out of scope.

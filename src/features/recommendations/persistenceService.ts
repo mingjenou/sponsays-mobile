@@ -11,12 +11,17 @@ import {
   noAuthenticatedUser,
   withRequestTimeout,
 } from '@/src/services/supabase/service';
+import { mapRecommendationPersistenceValues } from './persistenceMapping';
+
+export { mapRecommendationPersistenceValues } from './persistenceMapping';
 
 export type PersistedRecommendation = Tables<'recommendations'>;
 export type PersistedRecommendationSession = Tables<'recommendation_sessions'>;
 
 export interface RecommendationSessionInput {
   id: string;
+  latitude?: number | null;
+  longitude?: number | null;
   mood: string | null;
   socialContext: string | null;
   budget: string | null;
@@ -41,8 +46,8 @@ export const createRecommendationSession = async (
   const values: TablesInsert<'recommendation_sessions'> = {
     id: input.id,
     user_id: context.user.id,
-    latitude: null,
-    longitude: null,
+    latitude: input.latitude ?? null,
+    longitude: input.longitude ?? null,
     mood: input.mood,
     social_context: input.socialContext,
     budget: input.budget,
@@ -69,26 +74,7 @@ export const persistShownRecommendation = async (
   const context = await getAuthenticatedContext();
   if (!context) return noAuthenticatedUser();
 
-  const { place } = input.recommendation;
-  const values: TablesInsert<'recommendations'> = {
-    id: input.id,
-    session_id: input.sessionId,
-    user_id: context.user.id,
-    external_place_id: place.id,
-    source: 'mock',
-    place_name: place.name,
-    category: place.category,
-    latitude: place.latitude,
-    longitude: place.longitude,
-    estimated_distance_km: place.distanceKm ?? null,
-    estimated_duration_minutes: place.estimatedDurationMinutes ?? null,
-    price_level: place.priceLevel ?? null,
-    score: input.recommendation.score,
-    recommendation_reason: input.recommendation.reason,
-    rank_position: input.rankPosition,
-    accepted: false,
-    rejected: false,
-  };
+  const values = mapRecommendationPersistenceValues(input, context.user.id);
 
   try {
     const { data, error } = await withRequestTimeout(

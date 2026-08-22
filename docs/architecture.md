@@ -119,3 +119,25 @@ Blocking navigation until every database write completed was rejected because a 
 **Future implication**
 
 The local Adelaide provider can later be replaced behind the existing place model without changing persistence ownership or the Option 1A screens.
+
+## ADR-009 — Authenticated server-side real-place discovery
+
+**Decision**
+
+For signed-in development users, translate `DiscoveryIntent` into one bounded Google Places Text Search (New) request through a JWT-protected Supabase Edge Function. Normalize provider records into `PlaceCandidate`, then let the existing SponSays engine score and select one. Signed-out demo mode remains local.
+
+**Reason**
+
+The Google server key must never reach Expo clients. Google establishes which places exist; it does not make the SponSays decision. Text Search covers keyword and curated empty-query discovery without an unnecessary second Nearby request. Replacements reuse the same candidate pool, preserving variation and avoiding extra provider calls.
+
+**Failure behavior**
+
+Permission denial uses a visibly labelled central-Adelaide location fallback. Network, Edge Function, Google configuration, malformed-response and no-candidate failures use clearly labelled mock suggestions. Provider health is represented as `HEALTHY`, `DEGRADED` or `UNAVAILABLE` for internal handling.
+
+**Navigation state**
+
+Accepted recommendations are placed in a small in-memory typed cache keyed by the recommendation UUID (or a demo route key). The detail route therefore supports real or mock candidates without serializing provider records into a URL. Authenticated recommendations are also persisted for Memories, while the existing non-blocking write queue remains intact.
+
+**Legacy compatibility**
+
+The onboarding route and `profiles.onboarding_complete` remain for backward compatibility, but neither controls entry. Welcome/demo entry, successful authentication and restored sessions all reach Do directly. Long-term preferences are optional personalization in Me → Settings.

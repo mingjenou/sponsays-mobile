@@ -38,7 +38,7 @@ export default function WelcomeScreen() {
         </View>
 
         <View style={styles.actions}>
-          <PrimaryButton label="SHOW ME HOW" onPress={() => router.push('/(auth)/onboarding')} />
+          <PrimaryButton label="START SPONSAYING" onPress={() => router.replace('/(tabs)/do')} />
 <TextButton
   label="Sign in or create an account"
   onPress={() => router.push('/(auth)/sign-in')}

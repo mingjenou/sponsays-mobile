@@ -8,6 +8,7 @@ export interface RecommendationContext {
   maximumDistanceKm: number;
   availableMinutes: number;
   partySize: DiscoveryPartySize;
+  requireOpenNow?: boolean;
   rejectedPlaceIds: string[];
 }
 

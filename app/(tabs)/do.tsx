@@ -24,6 +24,8 @@ import {
 } from '@/src/features/discovery/intent';
 import { DEFAULT_DISCOVERY_FILTERS } from '@/src/features/discovery/options';
 import type { DiscoveryFilters } from '@/src/features/discovery/types';
+import { discoverRealPlaces } from '@/src/features/discovery/discoveryService';
+import { getDiscoveryLocation, type DiscoveryLocation } from '@/src/features/discovery/locationService';
 import { useAuth } from '@/src/features/auth/useAuth';
 import {
   CURRENT_RECOMMENDATION_BEHAVIOUR,
@@ -38,10 +40,12 @@ import {
   persistShownRecommendation,
 } from '@/src/features/recommendations/persistenceService';
 import { trackRecommendationPersistence } from '@/src/features/recommendations/persistenceReadiness';
+import { cacheRecommendation } from '@/src/features/recommendations/recommendationCache';
 import { ADELAIDE_PLACES } from '@/src/mocks/places';
 import { createPersistenceId, logDataError } from '@/src/services/supabase/service';
 import { colors, radius, shadows, spacing, typography } from '@/src/theme';
 import { formatDuration } from '@/src/utils/formatDuration';
+import type { PlaceCandidate } from '@/src/types/place';
 
 type DecisionStatus = 'idle' | 'deciding' | 'result' | 'limit' | 'empty';
 
@@ -53,7 +57,13 @@ const replacementCopy = (count: number): string => {
 };
 
 const formatPrice = (priceLevel?: number): string =>
-  priceLevel === 0 ? 'Free' : '$'.repeat(priceLevel ?? 0) || 'Flexible';
+  priceLevel === undefined ? 'Price unknown' : priceLevel === 0 ? 'Free' : '$'.repeat(priceLevel);
+
+const formatDistance = (distanceKm?: number): string =>
+  distanceKm === undefined ? 'Distance unknown' : `${distanceKm} km`;
+
+const formatTime = (minutes?: number): string =>
+  minutes === undefined ? 'Time varies' : formatDuration(minutes);
 
 export default function DoScreen() {
   const { user } = useAuth();
@@ -64,7 +74,12 @@ export default function DoScreen() {
   const [recommendation, setRecommendation] = useState<RecommendationResult>();
   const [rejectedIds, setRejectedIds] = useState<string[]>([]);
   const [replacementCount, setReplacementCount] = useState(0);
+  const [locationLabel, setLocationLabel] = useState('Adelaide · Demo');
+  const [providerMessage, setProviderMessage] = useState<string>();
+  const providerHealth = useRef<'HEALTHY' | 'DEGRADED' | 'UNAVAILABLE'>('HEALTHY');
   const decisionTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const candidatePool = useRef<PlaceCandidate[] | null>(null);
+  const discoveryLocation = useRef<DiscoveryLocation | null>(null);
   const persistenceQueue = useRef<Promise<void>>(Promise.resolve());
   const persistenceSession = useRef<{ id: string; writable: boolean } | null>(null);
   const currentRecommendationId = useRef<string | null>(null);
@@ -88,6 +103,7 @@ export default function DoScreen() {
       maximumDistanceKm: 15,
       availableMinutes: constraints.availableMinutes,
       partySize: constraints.partySize,
+      requireOpenNow: filters.timePreference === 'now',
       rejectedPlaceIds: rejections,
     };
   };
@@ -101,36 +117,72 @@ export default function DoScreen() {
     return persistenceQueue.current;
   };
 
-  const decide = (rejections = rejectedIds, rankPosition = replacementCount + 1) => {
+  const decide = async (rejections = rejectedIds, rankPosition = replacementCount + 1) => {
     const recommendationContext = buildContext(rejections);
-    const sessionFields = mapDiscoveryFiltersToSessionFields(
-      filters,
-      recommendationContext.maximumDistanceKm,
-    );
-    let session = persistenceSession.current;
+    void Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium).catch(() => undefined);
+    setStatus('deciding');
+    setRecommendation(undefined);
+    if (decisionTimer.current) clearTimeout(decisionTimer.current);
 
+    let candidates = candidatePool.current;
+    if (!candidates) {
+      if (user) {
+        const location = await getDiscoveryLocation();
+        discoveryLocation.current = location;
+        setLocationLabel(location.label);
+        const live = await discoverRealPlaces({
+          query,
+          latitude: location.latitude,
+          longitude: location.longitude,
+          radiusMeters: recommendationContext.maximumDistanceKm * 1_000,
+          timePreference: filters.timePreference,
+          budget: filters.budget,
+          partySize: filters.partySize,
+          maxCandidates: 12,
+        });
+        providerHealth.current = live.health;
+        if (live.candidates.length > 0) {
+          candidates = live.candidates;
+          setProviderMessage(location.message);
+        } else {
+          candidates = ADELAIDE_PLACES;
+          setLocationLabel('Adelaide · Demo fallback');
+          setProviderMessage(`${live.message ?? 'Live discovery is unavailable.'} Using Adelaide demo ideas instead.`);
+        }
+      } else {
+        candidates = ADELAIDE_PLACES;
+        setLocationLabel('Adelaide · Demo');
+        providerHealth.current = 'HEALTHY';
+        setProviderMessage(undefined);
+      }
+      candidatePool.current = candidates;
+    }
+
+    const sessionFields = mapDiscoveryFiltersToSessionFields(filters, recommendationContext.maximumDistanceKm);
+    let session = persistenceSession.current;
     if (user && !session) {
       session = { id: createPersistenceId(), writable: true };
       persistenceSession.current = session;
       const capturedSession = session;
+      const location = discoveryLocation.current;
       enqueuePersistence(async () => {
         const result = await createRecommendationSession({
           id: capturedSession.id,
+          latitude: location?.latitude ?? null,
+          longitude: location?.longitude ?? null,
           ...sessionFields,
           spontaneityMode: CURRENT_RECOMMENDATION_BEHAVIOUR,
         });
         if (result.error || !result.authenticated) capturedSession.writable = false;
       });
     }
-    void Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium).catch(() => undefined);
-    setStatus('deciding');
-    setRecommendation(undefined);
-    if (decisionTimer.current) clearTimeout(decisionTimer.current);
+
     decisionTimer.current = setTimeout(() => {
-      const next = makeRecommendation(ADELAIDE_PLACES, recommendationContext);
+      const next = makeRecommendation(candidates ?? ADELAIDE_PLACES, recommendationContext);
       setRecommendation(next);
       setStatus(next ? 'result' : 'empty');
       if (next) {
+        if (__DEV__) console.info(`[SponSays discovery] source=${next.place.provider ?? 'mock'} providerPlaceId=${next.place.providerId ?? next.place.id} health=${providerHealth.current}`);
         const recommendationId = user ? createPersistenceId() : null;
         currentRecommendationId.current = recommendationId;
         const capturedSession = session;
@@ -149,7 +201,7 @@ export default function DoScreen() {
         }
         void Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success).catch(() => undefined);
       }
-    }, 900);
+    }, 450);
   };
 
   const rejectRecommendation = () => {
@@ -168,7 +220,7 @@ export default function DoScreen() {
     }
 
     setReplacementCount((count) => count + 1);
-    decide(nextRejectedIds, replacementCount + 2);
+    void decide(nextRejectedIds, replacementCount + 2);
   };
 
   const acceptRecommendation = () => {
@@ -177,11 +229,13 @@ export default function DoScreen() {
     if (user && recommendationId) {
       enqueuePersistence(() => markRecommendationAccepted(recommendationId));
     }
+    const routeKey = recommendationId ?? `demo-${recommendation.place.id}`;
+    cacheRecommendation(routeKey, recommendation);
     void Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success).catch(() => undefined);
     router.push({
       pathname: '/recommendation/[id]',
       params: {
-        id: recommendation.place.id,
+        id: routeKey,
         reason: recommendation.reason,
         ...(recommendationId ? { recommendationId } : {}),
       },
@@ -199,6 +253,11 @@ export default function DoScreen() {
     setReplacementCount(0);
     persistenceSession.current = null;
     currentRecommendationId.current = null;
+    candidatePool.current = null;
+    discoveryLocation.current = null;
+    setProviderMessage(undefined);
+    providerHealth.current = 'HEALTHY';
+    setLocationLabel(user ? 'Location used when you SponSay' : 'Adelaide · Demo');
   };
 
   if (status !== 'idle') {
@@ -215,6 +274,10 @@ export default function DoScreen() {
             <Ionicons name="close" size={22} color={colors.charcoal} />
           </Pressable>
         </View>
+
+        {providerMessage ? (
+          <Text accessibilityLiveRegion="polite" style={styles.providerMessage}>{providerMessage}</Text>
+        ) : null}
 
         {status === 'deciding' ? (
           <View style={styles.deciding} accessibilityLiveRegion="polite">
@@ -258,7 +321,7 @@ export default function DoScreen() {
           <BrandMark compact />
           <View style={styles.locationPill}>
             <Ionicons name="location-outline" size={14} color={colors.blueDark} />
-            <Text style={styles.locationText}>Adelaide · Demo</Text>
+            <Text style={styles.locationText}>{locationLabel}</Text>
           </View>
         </View>
 
@@ -276,7 +339,7 @@ export default function DoScreen() {
                 autoCapitalize="sentences"
                 enterKeyHint="go"
                 onChangeText={setQuery}
-                onSubmitEditing={() => decide()}
+                onSubmitEditing={() => void decide()}
                 placeholder="Search an idea..."
                 placeholderTextColor={colors.charcoalMuted}
                 returnKeyType="go"
@@ -302,7 +365,7 @@ export default function DoScreen() {
         <View style={styles.actionSection}>
           <PrimaryButton
             label="SPONSAY ME ✦"
-            onPress={() => decide()}
+            onPress={() => void decide()}
             accessibilityHint="Ask SponSays to choose one experience from your idea and filters"
           />
           <Text style={styles.actionNote}>One recommendation. That’s the point.</Text>
@@ -313,8 +376,8 @@ export default function DoScreen() {
             <Ionicons name="navigate" size={18} color={colors.blueDark} />
           </View>
           <View style={styles.locationCopy}>
-            <Text style={styles.locationTitle}>Mock-backed ideas around Adelaide</Text>
-            <Text style={styles.locationMeta}>Real discovery providers arrive in the next milestone</Text>
+            <Text style={styles.locationTitle}>{user ? 'Real places when live discovery is configured' : 'Adelaide demo ideas'}</Text>
+            <Text style={styles.locationMeta}>{user ? 'Location is requested only when you SponSay' : 'No account or location permission required'}</Text>
           </View>
           <Ionicons name="checkmark-circle" size={20} color={colors.blueDark} />
         </View>
@@ -356,7 +419,7 @@ function RevealCard({
       <View>
         <ExperienceArtwork style={styles.cardArtwork} />
         <View style={styles.categoryPill}>
-          <Text style={styles.categoryText}>{place.category}</Text>
+          <Text style={styles.categoryText}>{place.category ?? 'Place'}</Text>
         </View>
       </View>
       <View style={styles.cardContent}>
@@ -366,8 +429,8 @@ function RevealCard({
           <Text style={styles.whyText}>{recommendation.reason}</Text>
         </View>
         <View style={styles.metaRow}>
-          <MetaItem icon="navigate-outline" value={`${place.distanceKm ?? '—'} km`} />
-          <MetaItem icon="time-outline" value={formatDuration(place.estimatedDurationMinutes ?? 60)} />
+          <MetaItem icon="navigate-outline" value={formatDistance(place.distanceKm)} />
+          <MetaItem icon="time-outline" value={formatTime(place.estimatedDurationMinutes)} />
           <MetaItem icon="wallet-outline" value={formatPrice(place.priceLevel)} />
         </View>
         <PrimaryButton
@@ -470,6 +533,7 @@ const styles = StyleSheet.create({
   locationMeta: { ...typography.caption, color: colors.charcoalMuted, fontSize: 10 },
   revealPage: { minHeight: '100%', paddingTop: spacing.md, paddingBottom: spacing.xxl },
   revealHeader: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between' },
+  providerMessage: { ...typography.caption, color: colors.charcoalSoft, marginTop: spacing.sm, textAlign: 'center' },
   closeButton: {
     width: 44,
     height: 44,

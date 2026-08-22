@@ -1,6 +1,8 @@
 import type { PlaceCandidate } from '@/src/types/place';
 
-export const ADELAIDE_PLACES: PlaceCandidate[] = [
+type MockPlaceFixture = Omit<PlaceCandidate, 'provider' | 'providerId' | 'source'>;
+
+const ADELAIDE_PLACE_FIXTURES: MockPlaceFixture[] = [
   {
     id: 'himeji-garden',
     name: 'Adelaide Himeji Garden',
@@ -152,6 +154,13 @@ export const ADELAIDE_PLACES: PlaceCandidate[] = [
     tags: ['culture', 'hidden gems', 'solo', 'couple', 'chill', 'free'],
   },
 ];
+
+export const ADELAIDE_PLACES: PlaceCandidate[] = ADELAIDE_PLACE_FIXTURES.map((place) => ({
+  ...place,
+  provider: 'mock',
+  providerId: place.id,
+  source: 'mock',
+}));
 
 export const findMockPlace = (id: string): PlaceCandidate | undefined =>
   ADELAIDE_PLACES.find((place) => place.id === id);

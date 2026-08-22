@@ -1,0 +1,2 @@
+[functions.discover-places]
+verify_jwt = true
