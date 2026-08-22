@@ -23,6 +23,38 @@ const emptySessionResult = (error: AuthServiceError | null = null): AuthSessionR
   error,
 });
 
+const signInError = (code?: string): AuthServiceError => {
+  if (code === 'email_not_confirmed') {
+    return {
+      code: 'email_not_confirmed',
+      message: 'Please confirm your email before signing in.',
+    };
+  }
+  if (code === 'over_email_send_rate_limit') {
+    return {
+      code: 'over_email_send_rate_limit',
+      message: 'Please wait a moment before requesting another email.',
+    };
+  }
+  return {
+    code: 'invalid_credentials',
+    message: "That email or password doesn't look right.",
+  };
+};
+
+const signUpError = (code?: string): AuthServiceError => {
+  if (code === 'over_email_send_rate_limit') {
+    return {
+      code: 'over_email_send_rate_limit',
+      message: 'Please wait a moment before requesting another email.',
+    };
+  }
+  return {
+    code: 'sign_up_failed',
+    message: "We couldn't create your account. Please try again.",
+  };
+};
+
 export const getCurrentSession = async (): Promise<AuthSessionResult> => {
   const client = supabase;
   if (!client || !isSupabaseAvailable) return emptySessionResult();
@@ -59,18 +91,15 @@ export const signInWithEmail = async (email: string, password: string): Promise<
     const { data, error } = await client.auth.signInWithPassword({ email: email.trim(), password });
     if (error) {
       logAuthError('sign-in', error);
-      return emptySessionResult({
-        code: 'invalid_credentials',
-        message: "That email or password doesn't look right.",
-      });
+      return emptySessionResult(signInError(error.code));
     }
 
     return { session: data.session, user: data.user, error: null };
   } catch (error) {
     logUnexpectedAuthError('sign-in', error);
     return emptySessionResult({
-      code: 'invalid_credentials',
-      message: "That email or password doesn't look right.",
+      code: 'sign_in_failed',
+      message: "We couldn't sign you in. Please try again.",
     });
   }
 };
@@ -83,10 +112,7 @@ export const signUpWithEmail = async (email: string, password: string): Promise<
     const { data, error } = await client.auth.signUp({ email: email.trim(), password });
     if (error) {
       logAuthError('sign-up', error);
-      return emptySessionResult({
-        code: 'sign_up_failed',
-        message: "We couldn't create your account. Please try again.",
-      });
+      return emptySessionResult(signUpError(error.code));
     }
 
     return { session: data.session, user: data.user, error: null };

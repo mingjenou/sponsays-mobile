@@ -2,7 +2,7 @@
 
 SponSays is a mobile decision service: give it a little context, receive one useful recommendation, and go do it. It is intentionally not a directory or an endless list of nearby places.
 
-This repository contains the Expo QR prototype plus an optional Supabase account foundation. It uses curated Adelaide demo data and still works without an account, an `.env` file, or any external service credentials.
+This repository contains the Expo QR prototype plus optional Supabase accounts and private user-data persistence. It uses curated Adelaide recommendations and still works without an account, an `.env` file, or any external service credentials.
 
 ## RUN SPONSAYS ON YOUR PHONE
 
@@ -97,6 +97,10 @@ app/                         Expo Router screens and navigation
 src/
   components/                Reusable UI pieces
   features/auth/             Optional Supabase authentication boundary
+  features/profile/          Signed-in profile and preference services
+  features/memories/         Private accepted-recommendation history
+  features/favourites/       Save-for-later persistence
+  features/feedback/         One feedback answer per recommendation
   features/recommendations/  Credential-free recommendation rules
   mocks/                     Curated Adelaide demo places
   theme/                     Brand colours, spacing and typography
@@ -108,7 +112,7 @@ supabase/                    Database migrations and setup documentation
 
 ## OPTIONAL SUPABASE SETUP
 
-No setup is required to run or test the SponSays demo. When Supabase is absent, the app leaves account controls optional and continues through the same Adelaide mock journey.
+No setup is required to run or test the SponSays demo. When Supabase is absent—or the user is signed out—the same Adelaide mock journey remains available and no demo activity is written remotely.
 
 For future real-account testing, create a local `.env` file in the repository root. Do not commit it. It should contain only the mobile-safe project settings supplied by Supabase:
 
@@ -130,6 +134,6 @@ Never place an OpenAI key, Google server key or Supabase service-role key in an 
 
 - Milestones 0 and 1: implemented and physically verified in Expo Go
 - Task 3A: optional Supabase client, email-auth boundary, database schema and RLS foundation
-- Recommendation persistence: intentionally not connected
+- Task 3C: signed-in profiles, preferences, recommendations, Memories, favourites and feedback persistence
 
-The default remains the local demo. Google Places, OpenAI, analytics and automatic recommendation persistence are intentionally not part of this foundation.
+The recommendation engine and Adelaide place source remain local. Google Places, OpenAI, analytics and subscriptions are intentionally not part of this milestone.

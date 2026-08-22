@@ -2,7 +2,10 @@ import type { Session, User } from '@supabase/supabase-js';
 
 export type AuthErrorCode =
   | 'not_configured'
+  | 'email_not_confirmed'
   | 'invalid_credentials'
+  | 'over_email_send_rate_limit'
+  | 'sign_in_failed'
   | 'sign_up_failed'
   | 'sign_out_failed'
   | 'session_failed';

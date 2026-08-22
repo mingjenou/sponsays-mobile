@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 import { Ionicons } from '@expo/vector-icons';
 import * as Haptics from 'expo-haptics';
 import * as Linking from 'expo-linking';
@@ -9,15 +9,51 @@ import { ExperienceArtwork } from '@/src/components/cards/ExperienceArtwork';
 import { FeedbackPanel } from '@/src/components/feedback/FeedbackPanel';
 import { EmptyState } from '@/src/components/layout/EmptyState';
 import { ScreenContainer } from '@/src/components/layout/ScreenContainer';
+import { useAuth } from '@/src/features/auth/useAuth';
+import {
+  getFavourite,
+  removeFavourite,
+  saveFavourite,
+} from '@/src/features/favourites/favouriteService';
+import {
+  getRecommendationFeedback,
+  saveRecommendationFeedback,
+} from '@/src/features/feedback/feedbackService';
 import { findMockPlace } from '@/src/mocks/places';
 import { colors, radius, shadows, spacing, typography } from '@/src/theme';
 import { formatDuration } from '@/src/utils/formatDuration';
 
 export default function RecommendationActionScreen() {
-  const { id, reason } = useLocalSearchParams<{ id: string; reason?: string }>();
+  const { user } = useAuth();
+  const { id, reason, recommendationId } = useLocalSearchParams<{
+    id: string;
+    reason?: string;
+    recommendationId?: string;
+  }>();
   const place = findMockPlace(id);
   const [feedback, setFeedback] = useState<'positive' | 'negative'>();
   const [saved, setSaved] = useState(false);
+  const [savingFavourite, setSavingFavourite] = useState(false);
+  const [persistenceMessage, setPersistenceMessage] = useState<string>();
+
+  useEffect(() => {
+    if (!user || !place) return;
+
+    let mounted = true;
+    void getFavourite(place.id).then((result) => {
+      if (mounted && !result.error) setSaved(Boolean(result.data));
+    });
+    if (recommendationId) {
+      void getRecommendationFeedback(recommendationId).then((result) => {
+        if (!mounted || result.error || !result.data) return;
+        setFeedback(result.data.positive ? 'positive' : 'negative');
+      });
+    }
+
+    return () => {
+      mounted = false;
+    };
+  }, [place, recommendationId, user]);
 
   if (!place) {
     return (
@@ -37,6 +73,37 @@ export default function RecommendationActionScreen() {
     if (await Linking.canOpenURL(url)) await Linking.openURL(url);
   };
 
+  const toggleSaved = async () => {
+    if (!place || savingFavourite) return;
+
+    const nextSaved = !saved;
+    setSaved(nextSaved);
+    setPersistenceMessage(undefined);
+    if (!user) return;
+
+    setSavingFavourite(true);
+    const result = nextSaved
+      ? await saveFavourite(place.id, place.name)
+      : await removeFavourite(place.id);
+    setSavingFavourite(false);
+
+    if (result.error) {
+      setSaved(!nextSaved);
+      setPersistenceMessage(result.error.message);
+    }
+  };
+
+  const updateFeedback = (value: 'positive' | 'negative') => {
+    setFeedback(value);
+    setPersistenceMessage(undefined);
+    void Haptics.selectionAsync().catch(() => undefined);
+
+    if (!user || !recommendationId) return;
+    void saveRecommendationFeedback(recommendationId, value === 'positive').then((result) => {
+      if (result.error) setPersistenceMessage(result.error.message);
+    });
+  };
+
   const price = place.priceLevel === 0 ? 'Free' : '$'.repeat(place.priceLevel ?? 0);
   const explanation =
     reason ?? 'Close enough to go now, within the moment, and different enough to feel worthwhile.';
@@ -52,7 +119,8 @@ export default function RecommendationActionScreen() {
           accessibilityRole="button"
           accessibilityLabel={saved ? 'Remove from saved' : 'Save for later'}
           accessibilityState={{ selected: saved }}
-          onPress={() => setSaved((current) => !current)}
+          disabled={savingFavourite}
+          onPress={() => void toggleSaved()}
           style={[styles.floatingButton, styles.saveButton]}
         >
           <Ionicons name={saved ? 'heart' : 'heart-outline'} size={23} color={saved ? colors.coral : colors.charcoal} />
@@ -92,7 +160,8 @@ export default function RecommendationActionScreen() {
           accessibilityRole="button"
           accessibilityLabel={saved ? 'Remove from saved' : 'Save for later'}
           accessibilityState={{ selected: saved }}
-          onPress={() => setSaved((current) => !current)}
+          disabled={savingFavourite}
+          onPress={() => void toggleSaved()}
           style={styles.saveTextButton}
         >
           <Text style={styles.saveText}>{saved ? 'Saved for later ✓' : 'Save for Later'}</Text>
@@ -101,11 +170,13 @@ export default function RecommendationActionScreen() {
         <View style={styles.feedbackSection}>
           <FeedbackPanel
             value={feedback}
-            onChange={(value) => {
-              setFeedback(value);
-              void Haptics.selectionAsync().catch(() => undefined);
-            }}
+            onChange={updateFeedback}
           />
+          {persistenceMessage ? (
+            <Text accessibilityLiveRegion="polite" style={styles.persistenceMessage}>
+              {persistenceMessage}
+            </Text>
+          ) : null}
         </View>
       </View>
     </ScreenContainer>
@@ -151,4 +222,5 @@ const styles = StyleSheet.create({
   saveTextButton: { minHeight: 44, alignItems: 'center', justifyContent: 'center' },
   saveText: { ...typography.bodyStrong, color: colors.blueDark },
   feedbackSection: { marginTop: spacing.xl, paddingTop: spacing.md, borderTopWidth: 1, borderTopColor: colors.border },
+  persistenceMessage: { ...typography.caption, color: colors.danger, marginTop: spacing.sm },
 });
