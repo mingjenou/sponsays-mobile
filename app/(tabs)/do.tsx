@@ -26,10 +26,12 @@ import {
   mapDiscoveryFiltersToConstraints,
   mapDiscoveryFiltersToSessionFields,
 } from '@/src/features/discovery/intent';
-import { DEFAULT_DISCOVERY_FILTERS } from '@/src/features/discovery/options';
+import { createDefaultDiscoveryFilters } from '@/src/features/discovery/options';
 import type { DiscoveryFilters } from '@/src/features/discovery/types';
 import { discoverRealPlaces } from '@/src/features/discovery/discoveryService';
 import { getDiscoveryLocation, type DiscoveryLocation } from '@/src/features/discovery/locationService';
+import { buildDiscoveryCacheKey } from '@/src/features/discovery/cacheKey';
+import { isRequestedDateTimeNearNow } from '@/src/features/discovery/when';
 import { useAuth } from '@/src/features/auth/useAuth';
 import {
   CURRENT_RECOMMENDATION_BEHAVIOUR,
@@ -53,10 +55,14 @@ import type { PlaceCandidate } from '@/src/types/place';
 
 type DecisionStatus = 'idle' | 'deciding' | 'result' | 'limit' | 'empty';
 
+const DISCOVERY_RADIUS_KM = 15;
+const DISCOVERY_CANDIDATE_COUNT = 20;
+
 const replacementCopy = (count: number): string => {
   if (count === 1) return 'Okay, another one.';
   if (count === 2) return 'One more?';
-  if (count === 3) return 'Last switch before we change the vibe.';
+  if (count === 3) return 'Another direction, coming up.';
+  if (count === MAX_REPLACEMENTS_PER_SESSION) return 'Want a different direction? Adjust the search.';
   return 'Not feeling it? I can make another call.';
 };
 
@@ -73,7 +79,7 @@ export default function DoScreen() {
   const { user } = useAuth();
   const authIdentity = user?.id ?? null;
   const [query, setQuery] = useState('');
-  const [filters, setFilters] = useState<DiscoveryFilters>(DEFAULT_DISCOVERY_FILTERS);
+  const [filters, setFilters] = useState<DiscoveryFilters>(() => createDefaultDiscoveryFilters());
   const [filtersVisible, setFiltersVisible] = useState(false);
   const [status, setStatus] = useState<DecisionStatus>('idle');
   const [recommendation, setRecommendation] = useState<RecommendationResult>();
@@ -84,6 +90,7 @@ export default function DoScreen() {
   const providerHealth = useRef<'HEALTHY' | 'DEGRADED' | 'UNAVAILABLE'>('HEALTHY');
   const decisionTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
   const candidatePool = useRef<PlaceCandidate[] | null>(null);
+  const candidatePoolKey = useRef<string | null>(null);
   const discoveryLocation = useRef<DiscoveryLocation | null>(null);
   const persistenceQueue = useRef<Promise<void>>(Promise.resolve());
   const persistenceSession = useRef<{ id: string; writable: boolean } | null>(null);
@@ -98,6 +105,7 @@ export default function DoScreen() {
     if (decisionTimer.current) clearTimeout(decisionTimer.current);
     decisionTimer.current = null;
     candidatePool.current = reset.candidatePool;
+    candidatePoolKey.current = reset.candidatePoolKey;
     discoveryLocation.current = reset.discoveryLocation;
     persistenceSession.current = reset.persistenceSession;
     currentRecommendationId.current = reset.currentRecommendationId;
@@ -128,11 +136,28 @@ export default function DoScreen() {
         ? {}
         : { maximumPriceLevel: constraints.maximumPriceLevel }),
       maximumDistanceKm: 15,
-      availableMinutes: constraints.availableMinutes,
+      requestedDateTime: constraints.requestedDateTime,
       partySize: constraints.partySize,
-      requireOpenNow: filters.timePreference === 'now',
+      requireOpenNow: isRequestedDateTimeNearNow(filters.requestedDateTime),
       rejectedPlaceIds: rejections,
     };
+  };
+
+  const invalidateDiscoverySession = () => {
+    if (decisionTimer.current) clearTimeout(decisionTimer.current);
+    decisionTimer.current = null;
+    candidatePool.current = null;
+    candidatePoolKey.current = null;
+    discoveryLocation.current = null;
+    persistenceSession.current = null;
+    currentRecommendationId.current = null;
+    setRejectedIds([]);
+    setReplacementCount(0);
+    setProviderMessage(undefined);
+    providerHealth.current = 'HEALTHY';
+    setRecommendation(undefined);
+    setStatus('idle');
+    setLocationLabel(user ? 'Location used when you SponSay' : 'Adelaide · Demo');
   };
 
   const enqueuePersistence = (operation: () => Promise<unknown>): Promise<void> => {
@@ -152,7 +177,27 @@ export default function DoScreen() {
     const authChanged = () =>
       authGeneration.current !== decisionGeneration ||
       activeAuthIdentity.current !== decisionAuthIdentity;
-    const recommendationContext = buildContext(rejections);
+    const expectedCacheKey = buildDiscoveryCacheKey({
+      authIdentity: decisionAuthIdentity,
+      query,
+      filters,
+      radiusKm: DISCOVERY_RADIUS_KM,
+      location: discoveryLocation.current,
+    });
+    let effectiveRejections = rejections;
+    let effectiveRankPosition = rankPosition;
+    if (candidatePool.current && candidatePoolKey.current !== expectedCacheKey) {
+      candidatePool.current = null;
+      candidatePoolKey.current = null;
+      discoveryLocation.current = null;
+      persistenceSession.current = null;
+      currentRecommendationId.current = null;
+      effectiveRejections = [];
+      effectiveRankPosition = 1;
+      setRejectedIds([]);
+      setReplacementCount(0);
+    }
+    const recommendationContext = buildContext(effectiveRejections);
     void Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium).catch(() => undefined);
     setStatus('deciding');
     setRecommendation(undefined);
@@ -170,10 +215,10 @@ export default function DoScreen() {
           latitude: location.latitude,
           longitude: location.longitude,
           radiusMeters: recommendationContext.maximumDistanceKm * 1_000,
-          timePreference: filters.timePreference,
+          requestedDateTime: filters.requestedDateTime,
           budget: filters.budget,
           partySize: filters.partySize,
-          maxCandidates: 12,
+          maxCandidates: DISCOVERY_CANDIDATE_COUNT,
         });
         if (authChanged()) return;
         providerHealth.current = live.health;
@@ -192,6 +237,13 @@ export default function DoScreen() {
         setProviderMessage(undefined);
       }
       candidatePool.current = candidates;
+      candidatePoolKey.current = buildDiscoveryCacheKey({
+        authIdentity: decisionAuthIdentity,
+        query,
+        filters,
+        radiusKm: recommendationContext.maximumDistanceKm,
+        location: discoveryLocation.current,
+      });
     }
 
     const sessionFields = mapDiscoveryFiltersToSessionFields(filters, recommendationContext.maximumDistanceKm);
@@ -231,7 +283,7 @@ export default function DoScreen() {
               id: capturedRecommendationId,
               sessionId: capturedSession.id,
               recommendation: next,
-              rankPosition,
+              rankPosition: effectiveRankPosition,
             });
           });
           trackRecommendationPersistence(capturedRecommendationId, persistence);
@@ -247,7 +299,8 @@ export default function DoScreen() {
     if (user && recommendationId) {
       enqueuePersistence(() => markRecommendationRejected(recommendationId));
     }
-    const nextRejectedIds = [...rejectedIds, recommendation.place.id];
+    const rejectedProviderId = recommendation.place.providerId ?? recommendation.place.id;
+    const nextRejectedIds = [...rejectedIds, rejectedProviderId];
     setRejectedIds(nextRejectedIds);
 
     if (replacementCount >= MAX_REPLACEMENTS_PER_SESSION) {
@@ -291,6 +344,7 @@ export default function DoScreen() {
     persistenceSession.current = null;
     currentRecommendationId.current = null;
     candidatePool.current = null;
+    candidatePoolKey.current = null;
     discoveryLocation.current = null;
     setProviderMessage(undefined);
     providerHealth.current = 'HEALTHY';
@@ -328,7 +382,9 @@ export default function DoScreen() {
             <Text style={styles.resultTitle}>This is the one.</Text>
             <RevealCard
               recommendation={recommendation}
+              canReplace={replacementCount < MAX_REPLACEMENTS_PER_SESSION}
               onAccept={acceptRecommendation}
+              onAdjust={resetSession}
               onReject={rejectRecommendation}
             />
             <Text style={styles.replacementText}>{replacementCopy(replacementCount)}</Text>
@@ -375,7 +431,10 @@ export default function DoScreen() {
                 accessibilityLabel="Search an idea"
                 autoCapitalize="sentences"
                 enterKeyHint="go"
-                onChangeText={setQuery}
+                onChangeText={(nextQuery) => {
+                  setQuery(nextQuery);
+                  invalidateDiscoverySession();
+                }}
                 onSubmitEditing={() => void decide()}
                 placeholder="Search an idea..."
                 placeholderTextColor={colors.charcoalMuted}
@@ -401,9 +460,9 @@ export default function DoScreen() {
 
         <View style={styles.actionSection}>
           <PrimaryButton
-            label="SPONSAY ME ✦"
+            label="SponSays"
             onPress={() => void decide()}
-            accessibilityHint="Ask SponSays to choose one experience from your idea and filters"
+            accessibilityHint="Ask SponSays to decide on one experience from your idea and filters"
           />
           <Text style={styles.actionNote}>One recommendation. That’s the point.</Text>
         </View>
@@ -424,6 +483,7 @@ export default function DoScreen() {
         visible={filtersVisible}
         onApply={(nextFilters) => {
           setFilters(nextFilters);
+          invalidateDiscoverySession();
           setFiltersVisible(false);
         }}
         onClose={() => setFiltersVisible(false)}
@@ -443,11 +503,15 @@ function DecisionMark({ loading = false }: { loading?: boolean }) {
 
 function RevealCard({
   recommendation,
+  canReplace,
   onAccept,
+  onAdjust,
   onReject,
 }: {
   recommendation: RecommendationResult;
+  canReplace: boolean;
   onAccept: () => void;
+  onAdjust: () => void;
   onReject: () => void;
 }) {
   const { place } = recommendation;
@@ -475,14 +539,25 @@ function RevealCard({
           onPress={onAccept}
           accessibilityHint="Accept this recommendation"
         />
-        <Pressable
-          accessibilityRole="button"
-          accessibilityLabel="Not this one"
-          onPress={onReject}
-          style={({ pressed }) => [styles.rejectButton, pressed && styles.rejectPressed]}
-        >
-          <Text style={styles.rejectText}>Not this one</Text>
-        </Pressable>
+        {canReplace ? (
+          <Pressable
+            accessibilityRole="button"
+            accessibilityLabel="Not this one"
+            onPress={onReject}
+            style={({ pressed }) => [styles.rejectButton, pressed && styles.rejectPressed]}
+          >
+            <Text style={styles.rejectText}>Not this one</Text>
+          </Pressable>
+        ) : (
+          <Pressable
+            accessibilityRole="button"
+            accessibilityLabel="Adjust search"
+            onPress={onAdjust}
+            style={({ pressed }) => [styles.rejectButton, pressed && styles.rejectPressed]}
+          >
+            <Text style={styles.rejectText}>Adjust search</Text>
+          </Pressable>
+        )}
       </View>
     </View>
   );

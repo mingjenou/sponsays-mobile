@@ -25,14 +25,14 @@ const request = {
   latitude: -34.9285,
   longitude: 138.6007,
   radiusMeters: 15_000,
-  timePreference: 'flexible' as const,
+  requestedDateTime: '2026-08-24T09:30:00.000Z',
   budget: 'flexible' as const,
   partySize: 'two' as const,
-  maxCandidates: 12,
+  maxCandidates: 20,
 };
 
 const filters = {
-  timePreference: 'flexible' as const,
+  requestedDateTime: '2026-08-24T09:30:00.000Z',
   budget: 'flexible' as const,
   partySize: 'two' as const,
 };
@@ -41,7 +41,7 @@ const contextFor = (query: string, rejectedPlaceIds: string[] = []): Recommendat
   discoveryIntent: createDiscoveryIntent(query, filters),
   interests: [],
   maximumDistanceKm: 15,
-  availableMinutes: 240,
+  requestedDateTime: filters.requestedDateTime,
   partySize: 'two',
   rejectedPlaceIds,
 });
@@ -75,16 +75,31 @@ test('Google translator preserves Vegetarian Food intent and budget', () => {
 });
 
 test('Google translator preserves Live Music as venue discovery, not an event claim', () => {
-  const body = translateToGoogleTextSearch({ ...request, query: 'Live Music', timePreference: 'tonight' });
+  const body = translateToGoogleTextSearch(
+    { ...request, query: 'Live Music' },
+    new Date('2026-08-22T02:00:00.000Z'),
+  );
   assert.equal(body.textQuery, 'live music');
   assert.equal(body.includedType, 'live_music_venue');
   assert.equal(body.openNow, undefined);
 });
 
-test('Google translator uses openNow only for Now and keeps Free as recommendation intent', () => {
-  const body = translateToGoogleTextSearch({ ...request, query: 'Vegetarian Food', budget: 'free', timePreference: 'now' });
-  assert.equal(body.openNow, true);
-  assert.equal(body.priceLevels, undefined);
+test('Google translator uses openNow only near now and keeps Free as recommendation intent', () => {
+  const now = new Date('2026-08-22T02:00:00.000Z');
+  const nearNow = translateToGoogleTextSearch({
+    ...request,
+    query: 'Vegetarian Food',
+    budget: 'free',
+    requestedDateTime: '2026-08-22T02:30:00.000Z',
+  }, now);
+  const future = translateToGoogleTextSearch({
+    ...request,
+    query: 'Vegetarian Food',
+    requestedDateTime: '2026-08-22T05:00:00.000Z',
+  }, now);
+  assert.equal(nearNow.openNow, true);
+  assert.equal(nearNow.priceLevels, undefined);
+  assert.equal(future.openNow, undefined);
 });
 
 test('provider validation bounds location, query length and candidate count', () => {
@@ -133,6 +148,11 @@ test('rejected real provider ID cannot immediately repeat', () => {
   assert.equal(result?.place.providerId, 'google-hike-2');
 });
 
+test('provider ID rejection works even when the internal candidate ID differs', () => {
+  const candidate = { ...realCandidates[0]!, id: 'internal-hike-1', providerId: 'google-hike-1' };
+  assert.equal(makeRecommendation([candidate], contextFor('Hike', ['google-hike-1']), () => 0), undefined);
+});
+
 test('a Hike request does not fall through to an unrelated high-rated restaurant', () => {
   const restaurant: PlaceCandidate = {
     id: 'restaurant-1', provider: 'google_places', providerId: 'restaurant-1',
@@ -179,6 +199,7 @@ test('normal entry routes skip legacy onboarding and Settings remains linked fro
 test('auth identity change resets every discovery-session value', () => {
   const reset = createAuthDiscoveryReset('signed-in-user');
   assert.equal(reset.candidatePool, null);
+  assert.equal(reset.candidatePoolKey, null);
   assert.equal(reset.discoveryLocation, null);
   assert.equal(reset.persistenceSession, null);
   assert.equal(reset.currentRecommendationId, null);

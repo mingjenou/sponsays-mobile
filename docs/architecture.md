@@ -54,7 +54,7 @@ This validates the UX and domain boundary without pretending the local Adelaide 
 
 **Future implication**
 
-Task 4B can translate the same intent into provider requests. Signed-in Task 4A sessions persist budget, available minutes and the radius actually used by the recommendation context. Party size intentionally is not overloaded into `recommendation_sessions.social_context`; a future schema change should add a dedicated representation. The legacy behaviour column remains non-destructive, receives only the fixed compatibility value, and is never user-facing.
+Task 4B translates the same intent into provider requests. Task 4B.2 replaces the coarse When preference with one canonical local selection encoded as an ISO `requestedDateTime`. Signed-in sessions continue to persist meaningful budget and radius values. Exact requested datetime is deliberately not overloaded into `available_minutes`, and party size is not overloaded into `recommendation_sessions.social_context`; a future focused schema change should add dedicated columns for both. The legacy behaviour column remains non-destructive, receives only the fixed compatibility value, and is never user-facing.
 
 ## ADR-004 — No global state package in Milestone 1
 
@@ -141,3 +141,17 @@ Accepted recommendations are placed in a small in-memory typed cache keyed by th
 **Legacy compatibility**
 
 The onboarding route and `profiles.onboarding_complete` remain for backward compatibility, but neither controls entry. Welcome/demo entry, successful authentication and restored sessions all reach Do directly. Long-term preferences are optional personalization in Me → Settings.
+
+## ADR-010 — Concrete local decision time and bounded candidate reuse
+
+**Decision**
+
+Represent the committed When filter as one ISO `requestedDateTime`, created from the device's local date and time. Request at most 20 Google candidates once per material discovery key and reuse that pool for up to eight replacements.
+
+**Reason**
+
+One canonical datetime prevents coarse and exact time values from drifting apart. A key covering auth identity, normalized query, datetime, budget, party size, radius and location prevents stale pools while keeping replacement API cost bounded. Rejected provider IDs remain excluded, allowing an initial recommendation plus as many as eight distinct replacements when enough suitable candidates exist.
+
+**Provider limitation**
+
+Google `openNow` is sent only when the selected time is genuinely near the current device time. A future datetime is context, not proof that a place will be open then. Exact session-datetime persistence and robust future-hours evaluation remain explicit follow-up schema and availability work.

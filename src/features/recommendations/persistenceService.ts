@@ -26,6 +26,7 @@ export interface RecommendationSessionInput {
   socialContext: string | null;
   budget: string | null;
   availableMinutes: number | null;
+  requestedDateTime: string;
   radiusKm: number | null;
   spontaneityMode: typeof CURRENT_RECOMMENDATION_BEHAVIOUR;
 }
@@ -55,6 +56,7 @@ export const createRecommendationSession = async (
     radius_km: input.radiusKm,
     spontaneity_mode: input.spontaneityMode,
   };
+  // requestedDateTime stays in the typed session context until a dedicated database column exists.
 
   try {
     const { data, error } = await withRequestTimeout(

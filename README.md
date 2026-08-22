@@ -67,8 +67,8 @@ If Expo Go says the project SDK is incompatible, update Expo Go from the phone�
 
 1. Wait for the SponSays splash.
 2. Choose demo mode and confirm **Do** opens directly—there is no required preference-selection screen.
-3. On **Do**, optionally enter an idea and set compact When/Budget/Who filters.
-4. Tap **SPONSAY ME ✦** for one recommendation.
+3. On **Do**, optionally enter an idea and set the compact date/time, Budget and Who filters.
+4. Tap **SponSays** for one recommendation.
 5. Confirm one Adelaide recommendation appears.
 6. Tap **Not this one** and confirm a different recommendation appears.
 7. Tap **I’M IN**, then try the directions button and feedback.
@@ -86,7 +86,7 @@ npm run lint
 npx expo start
 ```
 
-Focused tests cover discovery intent, recommendation variation, authenticated settings mapping, persistence readiness and auth error copy.
+Focused tests cover discovery intent, date/time selection, candidate-cache invalidation, nine-result replacement sessions, recommendation variation, authenticated settings mapping, persistence readiness and auth error copy.
 
 ## Project map
 
@@ -138,6 +138,7 @@ Never place an OpenAI key, Google server key or Supabase service-role key in an 
 - Task 3A: optional Supabase client, email-auth boundary, database schema and RLS foundation
 - Task 3C: signed-in profiles, preferences, recommendations, Memories, favourites and feedback persistence
 - Task 4A: idea search, compact When/Budget/Who filters and one internal recommendation behaviour
-- Task 4B: direct entry plus authenticated server-side Google Places Text Search (New), with explicit demo fallbacks
+- Task 4B: direct entry plus authenticated server-side Google Places Text Search (New), with explicit demo fallbacks; live results are physically verified on iPhone
+- Task 4B.2: the **SponSays** CTA, eight replacement opportunities and local date/time decision controls
 
 Google supplies bounded real candidate pools; the SponSays engine still chooses one result. Google Places does not prove that a live event is currently occurring. OpenAI, event sources, analytics and subscriptions remain out of scope.

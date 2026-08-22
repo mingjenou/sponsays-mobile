@@ -4,7 +4,7 @@ Read this file before changing the repository.
 
 ## Product
 
-SponSays reduces decision fatigue. The user provides a little context and receives **one** primary recommendation. The core question is “SponSays, what should I do?” and the core action is **SPONSAY ME ✦**.
+SponSays reduces decision fatigue. The user provides a little context and receives **one** primary recommendation. The core question is “SponSays, what should I do?” and the core action is **SponSays**.
 
 Never redesign SponSays into a directory, list-first marketplace, travel browser, social feed, map clone or infinite swipe experience.
 
@@ -48,7 +48,7 @@ For each meaningful change: build, type-check, run, test, fix, and confirm worki
 Test the founder journey after navigation or recommendation changes:
 
 ```text
-splash → welcome/account choice → Do → idea/filters → SPONSAY ME
+splash → welcome/account choice → Do → idea/filters → SponSays
 → one recommendation → replacement or I’M IN → action
 ```
 
@@ -58,7 +58,7 @@ splash → welcome/account choice → Do → idea/filters → SPONSAY ME
 - Location Blue `#5BA7FF` is the primary brand and navigation colour.
 - Warm Cream `#FFF6E6` is the soft supporting surface.
 - Ink `#1F1F23` is primary text.
-- Action Coral `#FF6B57` is reserved for primary action moments such as **SPONSAY ME ✦** and **I’M IN**.
+- Action Coral `#FF6B57` is reserved for primary action moments such as **SponSays** and **I’M IN**.
 - Mist `#E6E9EE` is the neutral border and control colour.
 - Use the blue location-star plus coral accent treatment in `BrandMark` until an approved production vector is supplied.
 - The Do screen must not become map-first. Maps belong primarily in Around Me and should support decisions rather than replace them.

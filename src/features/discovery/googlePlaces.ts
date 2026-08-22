@@ -1,4 +1,5 @@
 import type { DiscoveryProviderRequest, DiscoveryProviderResponse } from './providerTypes';
+import { isRequestedDateTimeNearNow } from './when';
 
 export const GOOGLE_TEXT_SEARCH_URL = 'https://places.googleapis.com/v1/places:searchText';
 export const GOOGLE_PLACES_FIELD_MASK = [
@@ -20,7 +21,7 @@ export const MAX_QUERY_LENGTH = 120;
 export const MIN_RADIUS_METERS = 500;
 export const MAX_RADIUS_METERS = 50_000;
 export const MAX_CANDIDATES = 20;
-export const DEFAULT_CANDIDATES = 12;
+export const DEFAULT_CANDIDATES = 20;
 
 interface GoogleDisplayName { text?: unknown }
 interface GoogleLocation { latitude?: unknown; longitude?: unknown }
@@ -82,6 +83,9 @@ export const validateDiscoveryProviderRequest = (
   if (!value || typeof value !== 'object') return { ok: false, message: 'Request body must be an object.' };
   const input = value as Record<string, unknown>;
   if (typeof input.query !== 'string') return { ok: false, message: 'Query must be text.' };
+  if (typeof input.requestedDateTime !== 'string' || !Number.isFinite(Date.parse(input.requestedDateTime))) {
+    return { ok: false, message: 'Requested date and time are invalid.' };
+  }
   const query = input.query.trim();
   const latitude = finiteNumber(input.latitude);
   const longitude = finiteNumber(input.longitude);
@@ -94,10 +98,8 @@ export const validateDiscoveryProviderRequest = (
   if (radiusMeters === undefined || radiusMeters < MIN_RADIUS_METERS || radiusMeters > MAX_RADIUS_METERS) return { ok: false, message: `Radius must be between ${MIN_RADIUS_METERS} and ${MAX_RADIUS_METERS} metres.` };
   if (maxCandidates === undefined || !Number.isInteger(maxCandidates) || maxCandidates < 1 || maxCandidates > MAX_CANDIDATES) return { ok: false, message: `Candidate count must be between 1 and ${MAX_CANDIDATES}.` };
 
-  const validTimes = ['now', 'tonight', 'tomorrow', 'flexible'];
   const validBudgets = ['free', '$', '$$', '$$$', 'flexible'];
   const validParties = ['solo', 'two', 'small_group', 'large_group'];
-  if (input.timePreference !== undefined && !validTimes.includes(String(input.timePreference))) return { ok: false, message: 'Time preference is invalid.' };
   if (input.budget !== undefined && !validBudgets.includes(String(input.budget))) return { ok: false, message: 'Budget is invalid.' };
   if (input.partySize !== undefined && !validParties.includes(String(input.partySize))) return { ok: false, message: 'Party size is invalid.' };
 
@@ -109,7 +111,7 @@ export const validateDiscoveryProviderRequest = (
       longitude,
       radiusMeters,
       maxCandidates,
-      ...(input.timePreference === undefined ? {} : { timePreference: input.timePreference as DiscoveryProviderRequest['timePreference'] }),
+      requestedDateTime: new Date(input.requestedDateTime).toISOString(),
       ...(input.budget === undefined ? {} : { budget: input.budget as DiscoveryProviderRequest['budget'] }),
       ...(input.partySize === undefined ? {} : { partySize: input.partySize as DiscoveryProviderRequest['partySize'] }),
     },
@@ -130,7 +132,10 @@ const classifyQuery = (query: string) => {
   return { textQuery: normalized || 'interesting places and activities' };
 };
 
-export const translateToGoogleTextSearch = (request: DiscoveryProviderRequest): GoogleTextSearchBody => {
+export const translateToGoogleTextSearch = (
+  request: DiscoveryProviderRequest,
+  now: Date = new Date(),
+): GoogleTextSearchBody => {
   const classified = classifyQuery(request.query);
   const pageSize = Math.min(MAX_CANDIDATES, Math.max(1, request.maxCandidates ?? DEFAULT_CANDIDATES));
   const body: GoogleTextSearchBody = {
@@ -147,7 +152,7 @@ export const translateToGoogleTextSearch = (request: DiscoveryProviderRequest): 
     rankPreference: 'RELEVANCE',
     ...(classified.includedType ? { includedType: classified.includedType, strictTypeFiltering: false as const } : {}),
   };
-  if (request.timePreference === 'now') body.openNow = true;
+  if (isRequestedDateTimeNearNow(request.requestedDateTime, now)) body.openNow = true;
 
   // Google only supports request-side price filters for selected place categories.
   // "Free" is response-only, so it remains recommendation intent rather than a fabricated filter.

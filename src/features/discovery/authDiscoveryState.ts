@@ -5,6 +5,7 @@ export const getDiscoveryProviderMode = (userId?: string | null): DiscoveryProvi
 
 export const createAuthDiscoveryReset = (userId?: string | null) => ({
   candidatePool: null,
+  candidatePoolKey: null,
   discoveryLocation: null,
   persistenceSession: null,
   currentRecommendationId: null,

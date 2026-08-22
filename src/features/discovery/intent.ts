@@ -1,8 +1,5 @@
-import {
-  BUDGET_OPTIONS,
-  PARTY_SIZE_OPTIONS,
-  WHEN_OPTIONS,
-} from './options';
+import { BUDGET_OPTIONS, PARTY_SIZE_OPTIONS } from './options';
+import { formatRequestedDateTime } from './when';
 import type {
   DiscoveryConstraints,
   DiscoveryFilters,
@@ -36,22 +33,18 @@ export const mapDiscoveryFiltersToConstraints = (
             ? 3
             : undefined;
 
-  const availableMinutes =
-    filters.timePreference === 'now'
-      ? 90
-      : filters.timePreference === 'tonight'
-        ? 180
-        : 240;
-
   return {
-    availableMinutes,
+    requestedDateTime: filters.requestedDateTime,
     ...(maximumPriceLevel === undefined ? {} : { maximumPriceLevel }),
     partySize: filters.partySize,
   };
 };
 
-export const formatDiscoveryFilterSummary = (filters: DiscoveryFilters): string => {
-  const when = WHEN_OPTIONS.find((option) => option.value === filters.timePreference)?.label;
+export const formatDiscoveryFilterSummary = (
+  filters: DiscoveryFilters,
+  now: Date = new Date(),
+): string => {
+  const when = formatRequestedDateTime(filters.requestedDateTime, now);
   const budget = BUDGET_OPTIONS.find((option) => option.value === filters.budget)?.label;
   const party = PARTY_SIZE_OPTIONS.find((option) => option.value === filters.partySize)?.label;
   return [when, budget, party].filter(Boolean).join(' · ');
@@ -66,7 +59,8 @@ export const mapDiscoveryFiltersToSessionFields = (
     mood: null,
     socialContext: null,
     budget: filters.budget === 'flexible' ? null : filters.budget,
-    availableMinutes: constraints.availableMinutes,
+    availableMinutes: null,
+    requestedDateTime: constraints.requestedDateTime,
     radiusKm,
   };
 };

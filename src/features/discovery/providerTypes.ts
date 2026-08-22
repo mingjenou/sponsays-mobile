@@ -2,7 +2,6 @@ import type { PlaceCandidate } from '../../types/place';
 import type {
   DiscoveryBudget,
   DiscoveryPartySize,
-  DiscoveryTimePreference,
 } from './types';
 
 export type ProviderHealth = 'HEALTHY' | 'DEGRADED' | 'UNAVAILABLE';
@@ -12,7 +11,7 @@ export interface DiscoveryProviderRequest {
   latitude: number;
   longitude: number;
   radiusMeters?: number;
-  timePreference?: DiscoveryTimePreference;
+  requestedDateTime: string;
   budget?: DiscoveryBudget;
   partySize?: DiscoveryPartySize;
   maxCandidates?: number;

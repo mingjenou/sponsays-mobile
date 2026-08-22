@@ -50,7 +50,7 @@ export default function AroundMeScreen() {
       <View style={styles.callout}>
         <Text style={styles.calloutTitle}>Seen enough?</Text>
         <Text style={styles.calloutCopy}>Let SponSays turn the nearby options into one decision.</Text>
-        <PrimaryButton label="SPONSAY ME ✦" onPress={() => router.navigate('/(tabs)/do')} />
+        <PrimaryButton label="SponSays" onPress={() => router.navigate('/(tabs)/do')} />
       </View>
     </ScreenContainer>
   );
