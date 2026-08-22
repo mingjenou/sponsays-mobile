@@ -1,6 +1,7 @@
 import { useEffect, useRef, useState } from 'react';
 import { Ionicons } from '@expo/vector-icons';
 import * as Haptics from 'expo-haptics';
+import * as Linking from 'expo-linking';
 import { router } from 'expo-router';
 import {
   ActivityIndicator,
@@ -47,6 +48,10 @@ import {
 } from '@/src/features/recommendations/persistenceService';
 import { trackRecommendationPersistence } from '@/src/features/recommendations/persistenceReadiness';
 import { cacheRecommendation } from '@/src/features/recommendations/recommendationCache';
+import { getCandidateDescription, getCandidateSourceUrl } from '@/src/features/recommendations/candidateDescription';
+import { buildPlannedExperience } from '@/src/features/planned/plannedLifecycle';
+import { cachePlannedExperience, saveDemoPlannedExperience } from '@/src/features/planned/plannedCache';
+import { createMyPlannedExperience } from '@/src/features/planned/plannedService';
 import { ADELAIDE_PLACES } from '@/src/mocks/places';
 import { createPersistenceId, logDataError } from '@/src/services/supabase/service';
 import { colors, radius, shadows, spacing, typography } from '@/src/theme';
@@ -316,18 +321,24 @@ export default function DoScreen() {
   const acceptRecommendation = () => {
     if (!recommendation) return;
     const recommendationId = currentRecommendationId.current;
-    if (user && recommendationId) {
-      enqueuePersistence(() => markRecommendationAccepted(recommendationId));
+    const planned = buildPlannedExperience(recommendation, filters.requestedDateTime, recommendationId ?? undefined);
+    const now = new Date().toISOString();
+    cachePlannedExperience({ ...planned, ...(user ? { userId: user.id } : {}), createdAt: now, updatedAt: now });
+    if (user) {
+      enqueuePersistence(async () => {
+        if (recommendationId) await markRecommendationAccepted(recommendationId);
+        await createMyPlannedExperience(planned);
+      });
+    } else {
+      void saveDemoPlannedExperience(planned);
     }
     const routeKey = recommendationId ?? `demo-${recommendation.place.id}`;
     cacheRecommendation(routeKey, recommendation);
     void Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success).catch(() => undefined);
     router.push({
-      pathname: '/recommendation/[id]',
+      pathname: '/planned/[id]',
       params: {
-        id: routeKey,
-        reason: recommendation.reason,
-        ...(recommendationId ? { recommendationId } : {}),
+        id: planned.id,
       },
     });
   };
@@ -525,6 +536,12 @@ function RevealCard({
       </View>
       <View style={styles.cardContent}>
         <Text style={styles.cardTitle}>{place.name}</Text>
+        <Text style={styles.cardDescription}>{getCandidateDescription(place)}</Text>
+        {getCandidateSourceUrl(place) ? (
+          <Pressable accessibilityRole="link" onPress={() => void Linking.openURL(getCandidateSourceUrl(place)!)} style={styles.readMore}>
+            <Text style={styles.readMoreText}>Read more</Text>
+          </Pressable>
+        ) : null}
         <View style={styles.whyBlock}>
           <Text style={styles.whyLabel}>Why we picked this</Text>
           <Text style={styles.whyText}>{recommendation.reason}</Text>
@@ -696,6 +713,9 @@ const styles = StyleSheet.create({
   categoryText: { ...typography.caption, color: colors.surface, fontSize: 11 },
   cardContent: { padding: spacing.sm, gap: spacing.md },
   cardTitle: { ...typography.heading2, color: colors.charcoal, fontSize: 24 },
+  cardDescription: { ...typography.body, color: colors.charcoalSoft, marginTop: -spacing.xs },
+  readMore: { alignSelf: 'flex-start', minHeight: 40, justifyContent: 'center', marginTop: -spacing.md },
+  readMoreText: { ...typography.bodyStrong, color: colors.blueDark, textDecorationLine: 'underline' },
   whyBlock: { gap: spacing.xxs },
   whyLabel: { ...typography.caption, color: colors.blueDark },
   whyText: { ...typography.caption, color: colors.charcoalSoft, fontWeight: '500' },

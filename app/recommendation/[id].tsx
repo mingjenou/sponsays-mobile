@@ -1,4 +1,4 @@
-import { useEffect, useRef, useState } from 'react';
+import { useEffect, useState } from 'react';
 import { Ionicons } from '@expo/vector-icons';
 import * as Haptics from 'expo-haptics';
 import * as Linking from 'expo-linking';
@@ -6,7 +6,6 @@ import { router, useLocalSearchParams } from 'expo-router';
 import { Platform, Pressable, StyleSheet, Text, View } from 'react-native';
 import { PrimaryButton } from '@/src/components/buttons/PrimaryButton';
 import { ExperienceArtwork } from '@/src/components/cards/ExperienceArtwork';
-import { FeedbackPanel } from '@/src/components/feedback/FeedbackPanel';
 import { EmptyState } from '@/src/components/layout/EmptyState';
 import { ScreenContainer } from '@/src/components/layout/ScreenContainer';
 import { useAuth } from '@/src/features/auth/useAuth';
@@ -15,11 +14,6 @@ import {
   removeFavourite,
   saveFavourite,
 } from '@/src/features/favourites/favouriteService';
-import {
-  getRecommendationFeedback,
-  saveRecommendationFeedback,
-} from '@/src/features/feedback/feedbackService';
-import { waitForRecommendationPersistence } from '@/src/features/recommendations/persistenceReadiness';
 import { getCachedRecommendation } from '@/src/features/recommendations/recommendationCache';
 import { findMockPlace } from '@/src/mocks/places';
 import { colors, radius, shadows, spacing, typography } from '@/src/theme';
@@ -27,18 +21,15 @@ import { formatDuration } from '@/src/utils/formatDuration';
 
 export default function RecommendationActionScreen() {
   const { user } = useAuth();
-  const { id, reason, recommendationId } = useLocalSearchParams<{
+  const { id, reason } = useLocalSearchParams<{
     id: string;
     reason?: string;
-    recommendationId?: string;
   }>();
   const cachedRecommendation = getCachedRecommendation(id);
   const place = cachedRecommendation?.place ?? findMockPlace(id);
-  const [feedback, setFeedback] = useState<'positive' | 'negative'>();
   const [saved, setSaved] = useState(false);
   const [savingFavourite, setSavingFavourite] = useState(false);
   const [persistenceMessage, setPersistenceMessage] = useState<string>();
-  const feedbackPersistenceQueue = useRef<Promise<void>>(Promise.resolve());
 
   useEffect(() => {
     if (!user || !place) return;
@@ -47,17 +38,11 @@ export default function RecommendationActionScreen() {
     void getFavourite(place.providerId ?? place.id).then((result) => {
       if (mounted && !result.error) setSaved(Boolean(result.data));
     });
-    if (recommendationId) {
-      void getRecommendationFeedback(recommendationId).then((result) => {
-        if (!mounted || result.error || !result.data) return;
-        setFeedback(result.data.positive ? 'positive' : 'negative');
-      });
-    }
 
     return () => {
       mounted = false;
     };
-  }, [place, recommendationId, user]);
+  }, [place, user]);
 
   if (!place) {
     return (
@@ -98,18 +83,6 @@ export default function RecommendationActionScreen() {
     }
   };
 
-  const updateFeedback = (value: 'positive' | 'negative') => {
-    setFeedback(value);
-    setPersistenceMessage(undefined);
-    void Haptics.selectionAsync().catch(() => undefined);
-
-    if (!user || !recommendationId) return;
-    feedbackPersistenceQueue.current = feedbackPersistenceQueue.current.then(async () => {
-      await waitForRecommendationPersistence(recommendationId);
-      const result = await saveRecommendationFeedback(recommendationId, value === 'positive');
-      if (result.error) setPersistenceMessage(result.error.message);
-    });
-  };
 
   const price = place.priceLevel === undefined
     ? 'Not provided'
@@ -176,17 +149,9 @@ export default function RecommendationActionScreen() {
           <Text style={styles.saveText}>{saved ? 'Saved for later ✓' : 'Save for Later'}</Text>
         </Pressable>
 
-        <View style={styles.feedbackSection}>
-          <FeedbackPanel
-            value={feedback}
-            onChange={updateFeedback}
-          />
-          {persistenceMessage ? (
-            <Text accessibilityLiveRegion="polite" style={styles.persistenceMessage}>
-              {persistenceMessage}
-            </Text>
-          ) : null}
-        </View>
+        {persistenceMessage ? (
+          <Text accessibilityLiveRegion="polite" style={styles.persistenceMessage}>{persistenceMessage}</Text>
+        ) : null}
       </View>
     </ScreenContainer>
   );
@@ -230,6 +195,5 @@ const styles = StyleSheet.create({
   whyText: { ...typography.caption, color: colors.charcoalSoft, fontWeight: '500' },
   saveTextButton: { minHeight: 44, alignItems: 'center', justifyContent: 'center' },
   saveText: { ...typography.bodyStrong, color: colors.blueDark },
-  feedbackSection: { marginTop: spacing.xl, paddingTop: spacing.md, borderTopWidth: 1, borderTopColor: colors.border },
   persistenceMessage: { ...typography.caption, color: colors.danger, marginTop: spacing.sm },
 });

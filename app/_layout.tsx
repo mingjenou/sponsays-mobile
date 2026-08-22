@@ -1,10 +1,13 @@
+import { useEffect } from 'react';
 import { Stack } from 'expo-router';
 import { StatusBar } from 'expo-status-bar';
 import { SafeAreaProvider } from 'react-native-safe-area-context';
 import { AuthProvider } from '@/src/features/auth/AuthProvider';
+import { configureLocalNotifications } from '@/src/features/notifications/notificationService';
 import { colors } from '@/src/theme';
 
 export default function RootLayout() {
+  useEffect(() => { configureLocalNotifications(); }, []);
   return (
     <SafeAreaProvider>
       <AuthProvider>
@@ -20,6 +23,8 @@ export default function RootLayout() {
           <Stack.Screen name="(auth)" />
           <Stack.Screen name="(tabs)" />
           <Stack.Screen name="recommendation/[id]" options={{ animation: 'slide_from_right' }} />
+          <Stack.Screen name="planned/index" options={{ animation: 'slide_from_right' }} />
+          <Stack.Screen name="planned/[id]" options={{ animation: 'slide_from_right' }} />
           <Stack.Screen name="settings/index" options={{ animation: 'slide_from_right' }} />
         </Stack>
       </AuthProvider>

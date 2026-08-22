@@ -238,7 +238,7 @@ export const normalizeGoogleTextSearchResponse = (
       ...(isOpen === undefined ? {} : { isOpen }),
       ...(typeof place.servesVegetarianFood === 'boolean' ? { servesVegetarianFood: place.servesVegetarianFood } : {}),
       ...(typeof place.liveMusic === 'boolean' ? { liveMusic: place.liveMusic } : {}),
-      ...(optionalString(place.googleMapsUri) ? { googleMapsUri: optionalString(place.googleMapsUri) } : {}),
+      ...(optionalString(place.googleMapsUri) ? { googleMapsUri: optionalString(place.googleMapsUri), sourceUrl: optionalString(place.googleMapsUri) } : {}),
       ...(optionalString(place.formattedAddress) ? { address: optionalString(place.formattedAddress) } : {}),
       tags: tagsFor(normalizedTypes, place),
     }];
