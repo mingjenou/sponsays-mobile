@@ -28,6 +28,24 @@
         {
           "backgroundColor": "#FFFCF7"
         }
+      ],
+      [
+        "expo-location",
+        {
+          "locationWhenInUsePermission": "Allow SponSays to use your location once to find relevant places nearby."
+        }
+      ],
+      [
+        "expo-calendar",
+        {
+          "calendarPermission": "SponSays uses your calendar only when you choose to add a plan."
+        }
+      ],
+      [
+        "expo-notifications",
+        {
+          "color": "#5BA7FF"
+        }
       ]
     ],
     "experiments": {

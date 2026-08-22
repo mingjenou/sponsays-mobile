@@ -7,7 +7,7 @@ const clamp01 = (value: number): number => Math.max(0, Math.min(1, value));
 
 const qualityScore = (place: PlaceCandidate): number => {
   const rating = clamp01(((place.rating ?? 3.5) - 3) / 2);
-  const reviewConfidence = clamp01(Math.log10((place.reviewCount ?? 1) + 1) / 4);
+  const reviewConfidence = clamp01(Math.log10((place.userRatingCount ?? place.reviewCount ?? 1) + 1) / 4);
   return rating * 0.75 + reviewConfidence * 0.25;
 };
 
@@ -23,8 +23,11 @@ export const scoreCandidate = (
   const budget =
     context.maximumPriceLevel === undefined
       ? 0.75
-      : clamp01(1 - Math.abs(context.maximumPriceLevel - (place.priceLevel ?? 0)) / 4);
-  const noveltyScore = place.tags.includes('hidden gems') ? 1 : place.reviewCount && place.reviewCount < 1000 ? 0.8 : 0.55;
+      : place.priceLevel === undefined
+        ? 0.6
+        : clamp01(1 - Math.abs(context.maximumPriceLevel - place.priceLevel) / 4);
+  const reviewCount = place.userRatingCount ?? place.reviewCount;
+  const noveltyScore = place.tags.includes('hidden gems') ? 1 : reviewCount && reviewCount < 1000 ? 0.8 : 0.55;
   const behaviour = interest * 0.75 + 0.2;
   const controlledSpontaneity = random();
   const intentMatchScore = matchDiscoveryIntent(place, context.discoveryIntent);

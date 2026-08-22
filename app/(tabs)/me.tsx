@@ -138,6 +138,12 @@ export default function MeScreen() {
       <PreferenceSection title="YOUR VIBE" items={vibe} />
       <PreferenceSection title="PREFERENCES" items={preferenceItems} />
 
+      <Pressable accessibilityRole="button" accessibilityLabel="View Planned experiences" onPress={() => router.push('/planned')} style={styles.plannedCard}>
+        <View style={styles.iconCircle}><Ionicons name="calendar-outline" size={20} color={colors.blueDark} /></View>
+        <View style={styles.preferenceCopy}><Text style={styles.preferenceLabel}>Planned</Text><Text style={styles.preferenceValue}>Upcoming SponSays</Text></View>
+        <Ionicons name="chevron-forward" size={19} color={colors.charcoalMuted} />
+      </Pressable>
+
       <Text style={styles.sectionLabel}>ACCOUNT</Text>
       <View style={styles.accountNote}>
         <View style={styles.accountIcon}>
@@ -207,6 +213,7 @@ function PreferenceSection({
 }
 
 const styles = StyleSheet.create({
+  plannedCard: { minHeight: 70, flexDirection: 'row', alignItems: 'center', gap: spacing.sm, paddingHorizontal: spacing.md, backgroundColor: colors.creamDeep, borderRadius: radius.xl, marginBottom: spacing.lg },
   profile: {
     flexDirection: 'row',
     alignItems: 'center',

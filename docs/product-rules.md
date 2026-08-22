@@ -7,7 +7,7 @@ SponSays makes a decision instead of asking users to browse. The default flow is
 ## Non-negotiable UX
 
 - Present one primary recommendation.
-- Keep **SPONSAY ME ✦** visually dominant.
+- Keep the **SponSays** decision CTA visually dominant.
 - Treat spontaneity as the product behaviour, not a level the user configures.
 - Use search intent and compact session filters to shape one recommendation without creating a result list.
 - Use a short deciding moment before revealing the result.
@@ -20,7 +20,7 @@ SponSays makes a decision instead of asking users to browse. The default flow is
 
 Use the founder-approved reference direction implemented in `src/theme/`: blue `#5BA7FF`, warm cream `#FFF6E6`, ink `#1F1F23`, action coral `#FF6B57`, and mist `#E6E9EE`. The temporary brand mark is a blue location shape with a white spark and coral accent. Colour carries meaning, so do not make every element colourful.
 
-The map is contextual, not a browsing surface: users still press **SPONSAY ME ✦** and receive one recommendation.
+The map is contextual, not a browsing surface: users still press **SponSays** and receive one recommendation.
 
 ## Exclusions
 

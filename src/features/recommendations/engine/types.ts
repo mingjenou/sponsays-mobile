@@ -6,8 +6,10 @@ export interface RecommendationContext {
   interests: string[];
   maximumPriceLevel?: number;
   maximumDistanceKm: number;
-  availableMinutes: number;
+  availableMinutes?: number;
+  requestedDateTime: string;
   partySize: DiscoveryPartySize;
+  requireOpenNow?: boolean;
   rejectedPlaceIds: string[];
 }
 

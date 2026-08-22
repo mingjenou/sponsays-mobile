@@ -4,13 +4,13 @@ Read this file before changing the repository.
 
 ## Product
 
-SponSays reduces decision fatigue. The user provides a little context and receives **one** primary recommendation. The core question is “SponSays, what should I do?” and the core action is **SPONSAY ME ✦**.
+SponSays reduces decision fatigue. The user provides a little context and receives **one** primary recommendation. The core question is “SponSays, what should I do?” and the core action is **SponSays**.
 
 Never redesign SponSays into a directory, list-first marketplace, travel browser, social feed, map clone or infinite swipe experience.
 
 ## Current milestone
 
-Milestones 0 and 1 are implemented and physically verified in Expo Go. Task 3C persists private signed-in activity through the Supabase boundary, and Task 4A adds mock-backed search intent plus compact When/Budget/Who filters. SponSays uses one internal recommendation behaviour; behaviour levels are not user settings. The credential-free Adelaide demo remains fully operational, and real discovery providers remain out of scope.
+Milestones 0 and 1 are implemented and physically verified in Expo Go. Task 3C persists private signed-in activity, Task 4A adds intent plus compact When/Budget/Who filters, and Task 4B adds direct entry plus authenticated real Adelaide discovery. SponSays uses one internal recommendation behaviour; behaviour levels are not user settings. The credential-free Adelaide demo remains fully operational.
 
 ## Stack and architecture
 
@@ -21,6 +21,8 @@ Milestones 0 and 1 are implemented and physically verified in Expo Go. Task 3C p
 - Recommendation business logic in `src/features/recommendations/engine/`
 - Vendor-compatible place model in `src/types/place.ts`
 - Local Adelaide data in `src/mocks/`
+- Provider translation and normalization in `src/features/discovery/`
+- Google Places credentials only in the authenticated Supabase Edge Function
 
 Keep screens, domain logic and data separate. Prefer small readable functions over clever abstractions. Do not add a global state library until persisted cross-screen data genuinely requires it.
 
@@ -46,7 +48,7 @@ For each meaningful change: build, type-check, run, test, fix, and confirm worki
 Test the founder journey after navigation or recommendation changes:
 
 ```text
-splash → welcome/onboarding → Do → idea/filters → SPONSAY ME
+splash → welcome/account choice → Do → idea/filters → SponSays
 → one recommendation → replacement or I’M IN → action
 ```
 
@@ -56,7 +58,7 @@ splash → welcome/onboarding → Do → idea/filters → SPONSAY ME
 - Location Blue `#5BA7FF` is the primary brand and navigation colour.
 - Warm Cream `#FFF6E6` is the soft supporting surface.
 - Ink `#1F1F23` is primary text.
-- Action Coral `#FF6B57` is reserved for primary action moments such as **SPONSAY ME ✦** and **I’M IN**.
+- Action Coral `#FF6B57` is reserved for primary action moments such as **SponSays** and **I’M IN**.
 - Mist `#E6E9EE` is the neutral border and control colour.
 - Use the blue location-star plus coral accent treatment in `BrandMark` until an approved production vector is supplied.
 - The Do screen must not become map-first. Maps belong primarily in Around Me and should support decisions rather than replace them.
@@ -92,7 +94,7 @@ Supabase Auth will own future identities. Future user tables must reference `aut
 - The service-role key is server-only and must never enter Expo code or client environment files.
 - Demo mode must remain operational without Supabase.
 - Never weaken RLS for debugging.
-- Do not add OpenAI or Google Places yet.
+- Do not add OpenAI. Google Places is allowed only through the Task 4B authenticated Edge Function; never call it from React Native.
 - Persist profiles, preferences and recommendation activity only for authenticated users.
 - Demo and signed-out activity must remain local and must not be written to Supabase.
 - Database failures must never block recommendation reveal, replacement, acceptance or directions.

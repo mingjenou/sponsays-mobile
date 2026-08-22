@@ -54,7 +54,7 @@ This validates the UX and domain boundary without pretending the local Adelaide 
 
 **Future implication**
 
-Task 4B can translate the same intent into provider requests. Signed-in Task 4A sessions persist budget, available minutes and the radius actually used by the recommendation context. Party size intentionally is not overloaded into `recommendation_sessions.social_context`; a future schema change should add a dedicated representation. The legacy behaviour column remains non-destructive, receives only the fixed compatibility value, and is never user-facing.
+Task 4B translates the same intent into provider requests. Task 4B.2 replaces the coarse When preference with one canonical local selection encoded as an ISO `requestedDateTime`. Signed-in sessions continue to persist meaningful budget and radius values. Exact requested datetime is deliberately not overloaded into `available_minutes`, and party size is not overloaded into `recommendation_sessions.social_context`; a future focused schema change should add dedicated columns for both. The legacy behaviour column remains non-destructive, receives only the fixed compatibility value, and is never user-facing.
 
 ## ADR-004 — No global state package in Milestone 1
 
@@ -119,3 +119,57 @@ Blocking navigation until every database write completed was rejected because a 
 **Future implication**
 
 The local Adelaide provider can later be replaced behind the existing place model without changing persistence ownership or the Option 1A screens.
+
+## ADR-009 — Authenticated server-side real-place discovery
+
+**Decision**
+
+For signed-in development users, translate `DiscoveryIntent` into one bounded Google Places Text Search (New) request through a JWT-protected Supabase Edge Function. Normalize provider records into `PlaceCandidate`, then let the existing SponSays engine score and select one. Signed-out demo mode remains local.
+
+**Reason**
+
+The Google server key must never reach Expo clients. Google establishes which places exist; it does not make the SponSays decision. Text Search covers keyword and curated empty-query discovery without an unnecessary second Nearby request. Replacements reuse the same candidate pool, preserving variation and avoiding extra provider calls.
+
+**Failure behavior**
+
+Permission denial uses a visibly labelled central-Adelaide location fallback. Network, Edge Function, Google configuration, malformed-response and no-candidate failures use clearly labelled mock suggestions. Provider health is represented as `HEALTHY`, `DEGRADED` or `UNAVAILABLE` for internal handling.
+
+**Navigation state**
+
+Accepted recommendations are placed in a small in-memory typed cache keyed by the recommendation UUID (or a demo route key). The detail route therefore supports real or mock candidates without serializing provider records into a URL. Authenticated recommendations are also persisted for Memories, while the existing non-blocking write queue remains intact.
+
+**Legacy compatibility**
+
+The onboarding route and `profiles.onboarding_complete` remain for backward compatibility, but neither controls entry. Welcome/demo entry, successful authentication and restored sessions all reach Do directly. Long-term preferences are optional personalization in Me → Settings.
+
+## ADR-010 — Concrete local decision time and bounded candidate reuse
+
+**Decision**
+
+Represent the committed When filter as one ISO `requestedDateTime`, created from the device's local date and time. Request at most 20 Google candidates once per material discovery key and reuse that pool for up to eight replacements.
+
+**Reason**
+
+One canonical datetime prevents coarse and exact time values from drifting apart. A key covering auth identity, normalized query, datetime, budget, party size, radius and location prevents stale pools while keeping replacement API cost bounded. Rejected provider IDs remain excluded, allowing an initial recommendation plus as many as eight distinct replacements when enough suitable candidates exist.
+
+**Provider limitation**
+
+Google `openNow` is sent only when the selected time is genuinely near the current device time. A future datetime is context, not proof that a place will be open then. Exact session-datetime persistence and robust future-hours evaluation remain explicit follow-up schema and availability work.
+
+## ADR-011 — Planned lifecycle and nearby exploration
+
+**Decision**
+
+Keep the existing Do, Around Me, Memories and Me tabs. Planned is a first-class stack destination linked from the accepted state, Memories and Me. An accepted recommendation becomes a private `planned_experiences` record at the exact requested datetime; only a completed plan becomes a Memory. Demo plans use device-local storage.
+
+**Calendar and reminders**
+
+Calendar and notification permission requests are contextual button actions. Native APIs are isolated behind small injectable gateways, calendar event IDs prevent duplicate creation, and reminder IDs are cancelled before rescheduling or closing a plan.
+
+**Around Me**
+
+Around Me uses `react-native-maps` with a Google map provider and a separate JWT-protected `discover-nearby` Edge Function backed by Places Nearby Search (New). It caps results at 20 and fetches a moved viewport only after an explicit “Search this area” action. Signed-out exploration uses labelled Adelaide mocks. Google Places records stay normalized as `PlaceCandidate`; the app displays Google Maps attribution and preserves the provider source URL.
+
+**Release gates**
+
+The planned-experience migration and new Edge Function are repository changes only until explicitly reviewed and deployed. Standalone Google-map builds require platform-restricted Maps SDK keys; the existing server Places key remains only in Edge Function secrets. Expo Go needs no additional map setup for physical testing.

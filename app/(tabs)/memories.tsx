@@ -9,6 +9,7 @@ import { SectionHeader } from '@/src/components/layout/SectionHeader';
 import { BrandMark } from '@/src/components/typography/BrandMark';
 import { useAuth } from '@/src/features/auth/useAuth';
 import { getMyMemories } from '@/src/features/memories/memoryService';
+import { getDemoPlannedExperiences } from '@/src/features/planned/plannedCache';
 import type { Memory } from '@/src/features/memories/types';
 import { SAMPLE_MEMORIES } from '@/src/mocks/recommendations';
 import { colors, radius, spacing, typography } from '@/src/theme';
@@ -16,15 +17,22 @@ import { colors, radius, spacing, typography } from '@/src/theme';
 export default function MemoriesScreen() {
   const { user } = useAuth();
   const [memories, setMemories] = useState<Memory[]>([]);
+  const [demoCompleted, setDemoCompleted] = useState<Memory[]>([]);
   const [loading, setLoading] = useState(false);
   const [loadMessage, setLoadMessage] = useState<string>();
 
   useFocusEffect(
     useCallback(() => {
       if (!user) {
-        setLoading(false);
+        let active = true;
+        setLoading(true);
         setLoadMessage(undefined);
-        return;
+        void getDemoPlannedExperiences().then((plans) => {
+          if (!active) return;
+          setDemoCompleted(plans.filter((plan) => plan.status === 'completed').map((plan) => ({ id: plan.id, externalPlaceId: plan.externalPlaceId, placeName: plan.placeName, category: plan.category ?? null, createdAt: plan.updatedAt, feedback: null })));
+          setLoading(false);
+        });
+        return () => { active = false; };
       }
 
       let active = true;
@@ -48,14 +56,14 @@ export default function MemoriesScreen() {
 
   const visibleMemories: Memory[] = user
     ? memories
-    : SAMPLE_MEMORIES.map((memory) => ({
+    : [...demoCompleted, ...SAMPLE_MEMORIES.map((memory) => ({
         id: memory.id,
         externalPlaceId: memory.id,
         placeName: memory.name,
         category: memory.category,
         createdAt: memory.date,
-        feedback: memory.positive ? 'positive' : null,
-      }));
+        feedback: memory.positive ? 'positive' as const : null,
+      }))];
 
   return (
     <ScreenContainer>
@@ -64,14 +72,15 @@ export default function MemoriesScreen() {
         <SectionHeader
           eyebrow="THINGS SPONSAYS GOT YOU TO DO"
           title="Your SponSays"
-          description="Good calls you accepted, remembered without turning them into another list to manage."
+          description="Completed SponSays, remembered without turning them into another list to manage."
         />
       </View>
+      <PrimaryButton label="VIEW PLANNED" tone="charcoal" onPress={() => router.push('/planned')} />
 
       <View style={styles.summary}>
         <View style={styles.summaryCopy}>
           <Text style={styles.summaryNumber}>{visibleMemories.length} new places tried</Text>
-          <Text style={styles.summaryLabel}>A little history of the good calls you accepted.</Text>
+          <Text style={styles.summaryLabel}>A little history of the good calls you completed.</Text>
         </View>
         {loading ? (
           <ActivityIndicator color={colors.blueDark} />
@@ -130,7 +139,7 @@ export default function MemoriesScreen() {
 }
 
 const formatMemoryDate = (value: string, fromDatabase: boolean): string => {
-  if (!fromDatabase) return value;
+  if (!fromDatabase && !/^\d{4}-\d{2}-\d{2}T/.test(value)) return value;
   const date = new Date(value);
   if (Number.isNaN(date.getTime())) return 'Recently';
   return new Intl.DateTimeFormat('en-AU', {

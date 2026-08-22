@@ -230,6 +230,35 @@ export type Database = {
           },
         ];
       };
+      planned_experiences: {
+        Row: {
+          id: string; user_id: string; recommendation_id: string | null; external_place_id: string;
+          provider: string; place_name: string; description: string | null; source_url: string | null;
+          address: string | null; latitude: number | null; longitude: number | null; category: string | null;
+          planned_for: string; status: 'planned' | 'completed' | 'cancelled'; calendar_event_id: string | null;
+          notification_id: string | null; reminder_offset_minutes: number | null; estimated_duration_minutes: number | null;
+          created_at: string; updated_at: string;
+        };
+        Insert: {
+          id?: string; user_id: string; recommendation_id?: string | null; external_place_id: string;
+          provider: string; place_name: string; description?: string | null; source_url?: string | null;
+          address?: string | null; latitude?: number | null; longitude?: number | null; category?: string | null;
+          planned_for: string; status?: 'planned' | 'completed' | 'cancelled'; calendar_event_id?: string | null;
+          notification_id?: string | null; reminder_offset_minutes?: number | null; estimated_duration_minutes?: number | null;
+          created_at?: string; updated_at?: string;
+        };
+        Update: {
+          id?: string; user_id?: string; recommendation_id?: string | null; external_place_id?: string;
+          provider?: string; place_name?: string; description?: string | null; source_url?: string | null;
+          address?: string | null; latitude?: number | null; longitude?: number | null; category?: string | null;
+          planned_for?: string; status?: 'planned' | 'completed' | 'cancelled'; calendar_event_id?: string | null;
+          notification_id?: string | null; reminder_offset_minutes?: number | null; estimated_duration_minutes?: number | null;
+          created_at?: string; updated_at?: string;
+        };
+        Relationships: [
+          { foreignKeyName: 'planned_experiences_recommendation_id_fkey'; columns: ['recommendation_id']; isOneToOne: false; referencedRelation: 'recommendations'; referencedColumns: ['id'] },
+        ];
+      };
       favourites: {
         Row: {
           id: string;

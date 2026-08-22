@@ -2,24 +2,16 @@ import type {
   DiscoveryBudget,
   DiscoveryFilters,
   DiscoveryPartySize,
-  DiscoveryTimePreference,
 } from './types';
+import { createDefaultRequestedDateTime } from './when';
 
-export const DEFAULT_DISCOVERY_FILTERS: DiscoveryFilters = {
-  timePreference: 'tonight',
+export const createDefaultDiscoveryFilters = (now: Date = new Date()): DiscoveryFilters => ({
+  requestedDateTime: createDefaultRequestedDateTime(now),
   budget: '$$',
   partySize: 'two',
-};
+});
 
-export const WHEN_OPTIONS: readonly {
-  value: DiscoveryTimePreference;
-  label: string;
-}[] = [
-  { value: 'now', label: 'Now' },
-  { value: 'tonight', label: 'Tonight' },
-  { value: 'tomorrow', label: 'Tomorrow' },
-  { value: 'flexible', label: 'Flexible' },
-];
+export const DEFAULT_DISCOVERY_FILTERS: DiscoveryFilters = createDefaultDiscoveryFilters();
 
 export const BUDGET_OPTIONS: readonly { value: DiscoveryBudget; label: string }[] = [
   { value: 'free', label: 'Free' },
