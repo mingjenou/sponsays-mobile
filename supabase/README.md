@@ -12,6 +12,10 @@ RLS is enabled on every user-data table in the initial migration. The policies c
 
 The files in `migrations/` are ordered database changes. `20260821_initial_schema.sql` creates the first six tables, indexes, triggers, and their security policies. The Task 3C migrations mirror the live legacy-policy cleanup and add one-feedback-per-recommendation uniqueness. Do not edit an already-applied migration; add a new timestamped migration for later changes.
 
+**LIVE MIGRATION REQUIRED BEFORE AUTHENTICATED FEEDBACK TEST:** `20260822_unique_recommendation_feedback.sql`
+
+Keep this release gate explicit until the migration has actually been applied to the target Supabase project. The app upserts feedback with `onConflict: 'user_id,recommendation_id'`; do not mark the migration as deployed based only on the repository file.
+
 When a Supabase project is eventually connected, a developer can apply migrations using the Supabase CLI after reviewing the target project:
 
 ```bash

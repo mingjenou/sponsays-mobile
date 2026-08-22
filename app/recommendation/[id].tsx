@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import { Ionicons } from '@expo/vector-icons';
 import * as Haptics from 'expo-haptics';
 import * as Linking from 'expo-linking';
@@ -19,6 +19,7 @@ import {
   getRecommendationFeedback,
   saveRecommendationFeedback,
 } from '@/src/features/feedback/feedbackService';
+import { waitForRecommendationPersistence } from '@/src/features/recommendations/persistenceReadiness';
 import { findMockPlace } from '@/src/mocks/places';
 import { colors, radius, shadows, spacing, typography } from '@/src/theme';
 import { formatDuration } from '@/src/utils/formatDuration';
@@ -35,6 +36,7 @@ export default function RecommendationActionScreen() {
   const [saved, setSaved] = useState(false);
   const [savingFavourite, setSavingFavourite] = useState(false);
   const [persistenceMessage, setPersistenceMessage] = useState<string>();
+  const feedbackPersistenceQueue = useRef<Promise<void>>(Promise.resolve());
 
   useEffect(() => {
     if (!user || !place) return;
@@ -99,7 +101,9 @@ export default function RecommendationActionScreen() {
     void Haptics.selectionAsync().catch(() => undefined);
 
     if (!user || !recommendationId) return;
-    void saveRecommendationFeedback(recommendationId, value === 'positive').then((result) => {
+    feedbackPersistenceQueue.current = feedbackPersistenceQueue.current.then(async () => {
+      await waitForRecommendationPersistence(recommendationId);
+      const result = await saveRecommendationFeedback(recommendationId, value === 'positive');
       if (result.error) setPersistenceMessage(result.error.message);
     });
   };

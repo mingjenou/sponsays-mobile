@@ -1,5 +1,6 @@
 import type { Session } from '@supabase/supabase-js';
 import { isSupabaseAvailable, supabase } from '@/src/services/supabase/client';
+import { mapSignInError, mapSignUpError } from './errorMapping';
 import type { AuthServiceError, AuthSessionResult, AuthSignOutResult } from './types';
 
 const unavailableError: AuthServiceError = {
@@ -22,38 +23,6 @@ const emptySessionResult = (error: AuthServiceError | null = null): AuthSessionR
   user: null,
   error,
 });
-
-const signInError = (code?: string): AuthServiceError => {
-  if (code === 'email_not_confirmed') {
-    return {
-      code: 'email_not_confirmed',
-      message: 'Please confirm your email before signing in.',
-    };
-  }
-  if (code === 'over_email_send_rate_limit') {
-    return {
-      code: 'over_email_send_rate_limit',
-      message: 'Please wait a moment before requesting another email.',
-    };
-  }
-  return {
-    code: 'invalid_credentials',
-    message: "That email or password doesn't look right.",
-  };
-};
-
-const signUpError = (code?: string): AuthServiceError => {
-  if (code === 'over_email_send_rate_limit') {
-    return {
-      code: 'over_email_send_rate_limit',
-      message: 'Please wait a moment before requesting another email.',
-    };
-  }
-  return {
-    code: 'sign_up_failed',
-    message: "We couldn't create your account. Please try again.",
-  };
-};
 
 export const getCurrentSession = async (): Promise<AuthSessionResult> => {
   const client = supabase;
@@ -91,7 +60,7 @@ export const signInWithEmail = async (email: string, password: string): Promise<
     const { data, error } = await client.auth.signInWithPassword({ email: email.trim(), password });
     if (error) {
       logAuthError('sign-in', error);
-      return emptySessionResult(signInError(error.code));
+      return emptySessionResult(mapSignInError(error.code));
     }
 
     return { session: data.session, user: data.user, error: null };
@@ -112,7 +81,7 @@ export const signUpWithEmail = async (email: string, password: string): Promise<
     const { data, error } = await client.auth.signUp({ email: email.trim(), password });
     if (error) {
       logAuthError('sign-up', error);
-      return emptySessionResult(signUpError(error.code));
+      return emptySessionResult(mapSignUpError(error.code));
     }
 
     return { session: data.session, user: data.user, error: null };

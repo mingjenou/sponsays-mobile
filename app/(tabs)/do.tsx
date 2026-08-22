@@ -23,6 +23,7 @@ import {
   markRecommendationRejected,
   persistShownRecommendation,
 } from '@/src/features/recommendations/persistenceService';
+import { trackRecommendationPersistence } from '@/src/features/recommendations/persistenceReadiness';
 import { ADELAIDE_PLACES } from '@/src/mocks/places';
 import { createPersistenceId, logDataError } from '@/src/services/supabase/service';
 import { colors, radius, shadows, spacing, typography } from '@/src/theme';
@@ -84,12 +85,13 @@ export default function DoScreen() {
     rejectedPlaceIds: rejections,
   });
 
-  const enqueuePersistence = (operation: () => Promise<unknown>) => {
+  const enqueuePersistence = (operation: () => Promise<unknown>): Promise<void> => {
     persistenceQueue.current = persistenceQueue.current
       .then(async () => {
         await operation();
       })
       .catch((error: unknown) => logDataError('persistence-queue', error));
+    return persistenceQueue.current;
   };
 
   const decide = (rejections = rejectedIds, rankPosition = replacementCount + 1) => {
@@ -130,7 +132,7 @@ export default function DoScreen() {
         const capturedSession = session;
         if (recommendationId && capturedSession) {
           const capturedRecommendationId = recommendationId;
-          enqueuePersistence(async () => {
+          const persistence = enqueuePersistence(async () => {
             if (!capturedSession.writable) return;
             await persistShownRecommendation({
               id: capturedRecommendationId,
@@ -139,6 +141,7 @@ export default function DoScreen() {
               rankPosition,
             });
           });
+          trackRecommendationPersistence(capturedRecommendationId, persistence);
         }
         void Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success).catch(() => undefined);
       }

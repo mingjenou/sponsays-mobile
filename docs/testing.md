@@ -5,6 +5,7 @@
 ```bash
 npm run typecheck
 npm run lint
+npm test
 ```
 
 The CI workflow runs the same commands after `npm ci`.
