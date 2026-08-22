@@ -139,6 +139,6 @@ Never place an OpenAI key, Google server key or Supabase service-role key in an 
 - Task 3C: signed-in profiles, preferences, recommendations, Memories, favourites and feedback persistence
 - Task 4A: idea search, compact When/Budget/Who filters and one internal recommendation behaviour
 - Task 4B: direct entry plus authenticated server-side Google Places Text Search (New), with explicit demo fallbacks; live results are physically verified on iPhone
-- Task 4B.2: the **SponSays** CTA, eight replacement opportunities and local date/time decision controls
+- Task 4B.2–4B.3: the **SponSays** CTA, eight replacement opportunities and paired local date/time wheel controls
 
 Google supplies bounded real candidate pools; the SponSays engine still chooses one result. Google Places does not prove that a live event is currently occurring. OpenAI, event sources, analytics and subscriptions remain out of scope.

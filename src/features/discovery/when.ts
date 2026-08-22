@@ -63,6 +63,42 @@ export const getNearestFutureHalfHour = (now: Date = new Date()): Date => {
 export const createDefaultRequestedDateTime = (now: Date = new Date()): string =>
   getNearestFutureHalfHour(now).toISOString();
 
+export const ensureRequestedDateTimeIsFuture = (
+  requestedDateTime: string,
+  now: Date = new Date(),
+): string => {
+  const selected = new Date(requestedDateTime);
+  const earliest = getNearestFutureHalfHour(now);
+  return selected.getTime() < earliest.getTime()
+    ? earliest.toISOString()
+    : selected.toISOString();
+};
+
+export const replaceRequestedDate = (
+  requestedDateTime: string,
+  dateKey: string,
+  now: Date = new Date(),
+): string => ensureRequestedDateTimeIsFuture(
+  buildLocalDateTimeIso(dateKey, getLocalTimeKey(new Date(requestedDateTime))),
+  now,
+);
+
+export const replaceRequestedTime = (
+  requestedDateTime: string,
+  timeKey: string,
+  now: Date = new Date(),
+): string => ensureRequestedDateTimeIsFuture(
+  buildLocalDateTimeIso(getLocalDateKey(new Date(requestedDateTime)), timeKey),
+  now,
+);
+
+export const isLocalDateTimeBeforeNextSlot = (
+  dateKey: string,
+  timeKey: string,
+  now: Date = new Date(),
+): boolean => new Date(buildLocalDateTimeIso(dateKey, timeKey)).getTime() <
+  getNearestFutureHalfHour(now).getTime();
+
 export const createDateOptions = (now: Date = new Date()): DiscoveryDateOption[] => {
   const todayKey = getLocalDateKey(now);
   const tomorrow = new Date(now);
@@ -72,10 +108,13 @@ export const createDateOptions = (now: Date = new Date()): DiscoveryDateOption[]
   return Array.from({ length: DATE_OPTION_COUNT }, (_unused, index) => {
     const date = new Date(now.getFullYear(), now.getMonth(), now.getDate() + index, 12);
     const dateKey = getLocalDateKey(date);
-    const concise = new Intl.DateTimeFormat('en-AU', {
-      weekday: 'short',
+    const dayMonth = new Intl.DateTimeFormat('en-AU', {
       day: 'numeric',
-    }).format(date).replace(',', '');
+      month: 'short',
+    }).format(date);
+    const weekday = new Intl.DateTimeFormat('en-AU', {
+      weekday: 'short',
+    }).format(date);
     const full = new Intl.DateTimeFormat('en-AU', {
       weekday: 'long',
       day: 'numeric',
@@ -83,7 +122,11 @@ export const createDateOptions = (now: Date = new Date()): DiscoveryDateOption[]
     }).format(date);
     return {
       dateKey,
-      label: dateKey === todayKey ? 'Today' : dateKey === tomorrowKey ? 'Tomorrow' : concise,
+      label: dateKey === todayKey
+        ? `Today ${dayMonth}`
+        : dateKey === tomorrowKey
+          ? `Tomorrow ${dayMonth}`
+          : `${weekday} ${dayMonth}`,
       accessibilityLabel: dateKey === todayKey ? `Today, ${full}` : dateKey === tomorrowKey ? `Tomorrow, ${full}` : full,
     };
   });

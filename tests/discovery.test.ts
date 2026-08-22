@@ -16,9 +16,13 @@ import {
   createDateOptions,
   createDefaultRequestedDateTime,
   createTimeOptions,
+  ensureRequestedDateTimeIsFuture,
   getLocalDateKey,
   getLocalTimeKey,
   getNearestFutureHalfHour,
+  isLocalDateTimeBeforeNextSlot,
+  replaceRequestedDate,
+  replaceRequestedTime,
 } from '@/src/features/discovery/when';
 import type { DiscoveryFilters } from '@/src/features/discovery/types';
 import { MAX_REPLACEMENTS_PER_SESSION } from '@/src/constants/recommendations';
@@ -77,7 +81,7 @@ test('When, Budget and Who filters map to typed constraints and summary copy', (
   });
   assert.equal(
     formatDiscoveryFilterSummary(filters, new Date(2026, 7, 22, 12)),
-    'Mon 24 7:00 PM · $$ · 2 people',
+    'Mon 24 Aug 7:00 PM · $$ · 2 people',
   );
   assert.deepEqual(mapDiscoveryFiltersToSessionFields(filters, 15), {
     mood: null,
@@ -94,8 +98,10 @@ test('date and time selectors use 14 local dates and 30-minute times from 6 AM t
   const dates = createDateOptions(now);
   const times = createTimeOptions();
   assert.equal(dates.length, 14);
-  assert.equal(dates[0]?.label, 'Today');
-  assert.equal(dates[1]?.label, 'Tomorrow');
+  assert.equal(dates[0]?.label, 'Today 22 Aug');
+  assert.equal(dates[1]?.label, 'Tomorrow 23 Aug');
+  assert.equal(dates[2]?.label, 'Mon 24 Aug');
+  assert.match(dates[0]?.accessibilityLabel ?? '', /^Today, Saturday 22 August$/);
   assert.equal(times.length, 36);
   assert.equal(times[0]?.timeKey, '06:00');
   assert.equal(times.at(-1)?.timeKey, '23:30');
@@ -107,6 +113,36 @@ test('selected local date and time map to one canonical ISO datetime', () => {
   assert.equal(getLocalDateKey(selected), '2026-08-24');
   assert.equal(getLocalTimeKey(selected), '19:30');
   assert.equal(selected.toISOString(), requestedDateTime);
+});
+
+test('date and time wheel changes preserve the other local datetime component', () => {
+  const now = new Date(2026, 7, 22, 10);
+  const initial = buildLocalDateTimeIso('2026-08-23', '19:30');
+  const dateChanged = replaceRequestedDate(initial, '2026-08-24', now);
+  assert.equal(getLocalDateKey(new Date(dateChanged)), '2026-08-24');
+  assert.equal(getLocalTimeKey(new Date(dateChanged)), '19:30');
+
+  const timeChanged = replaceRequestedTime(dateChanged, '20:00', now);
+  assert.equal(getLocalDateKey(new Date(timeChanged)), '2026-08-24');
+  assert.equal(getLocalTimeKey(new Date(timeChanged)), '20:00');
+});
+
+test('past Today times cannot be committed and switching back to Today corrects the time', () => {
+  const now = new Date(2026, 7, 22, 16, 46, 7);
+  const todayKey = getLocalDateKey(now);
+  assert.equal(isLocalDateTimeBeforeNextSlot(todayKey, '16:30', now), true);
+  assert.equal(isLocalDateTimeBeforeNextSlot(todayKey, '17:00', now), false);
+
+  const todayEvening = buildLocalDateTimeIso(todayKey, '18:00');
+  const correctedTime = replaceRequestedTime(todayEvening, '09:00', now);
+  assert.equal(getLocalDateKey(new Date(correctedTime)), todayKey);
+  assert.equal(getLocalTimeKey(new Date(correctedTime)), '17:00');
+
+  const tomorrowMorning = buildLocalDateTimeIso('2026-08-23', '09:00');
+  const correctedDate = replaceRequestedDate(tomorrowMorning, todayKey, now);
+  assert.equal(getLocalDateKey(new Date(correctedDate)), todayKey);
+  assert.equal(getLocalTimeKey(new Date(correctedDate)), '17:00');
+  assert.equal(ensureRequestedDateTimeIsFuture(correctedDate, now), correctedDate);
 });
 
 test('default requested time is the nearest future half hour and rolls late nights forward', () => {
@@ -256,10 +292,16 @@ test('the visible discovery CTA is exactly SponSays and filter editing remains s
   assert.match(doScreen, /label="SponSays"/);
   assert.match(aroundMe, /label="SponSays"/);
   assert.doesNotMatch(`${doScreen}\n${aroundMe}`, /SPONSAYS? ME(?: ✦)?/i);
-  assert.match(modal, /if \(visible\) \{[\s\S]*setDraft\(filters\)/);
-  assert.match(modal, /label="APPLY" onPress=\{\(\) => onApply\(draft\)\}/);
+  assert.match(modal, /if \(visible\) \{[\s\S]*setDraft\(\{[\s\S]*\.\.\.filters/);
+  assert.match(modal, /const applyDraft = \(\) => onApply\(\{/);
+  assert.match(modal, /label="APPLY" onPress=\{applyDraft\}/);
   assert.match(modal, /label="Cancel" onPress=\{onClose\}/);
   assert.doesNotMatch(modal, /WHEN_OPTIONS|Now['"]|Tonight|Flexible['"]/);
+  assert.doesNotMatch(modal, /DateSlider|TimeSlider|horizontal/);
+  assert.match(modal, /PairedWhenWheel/);
+  assert.match(modal, /snapToInterval=\{WHEEL_ROW_HEIGHT\}/);
+  assert.match(modal, /onMomentumScrollEnd=\{settleSelection\}/);
+  assert.match(modal, /accessibilityRole="adjustable"/);
   assert.match(doScreen, /onChangeText=\{\(nextQuery\) => \{[\s\S]*invalidateDiscoverySession\(\)/);
   assert.match(doScreen, /onApply=\{\(nextFilters\) => \{[\s\S]*invalidateDiscoverySession\(\)/);
 });

@@ -17,7 +17,7 @@ The CI workflow runs the same commands after `npm ci`.
 3. Confirm the splash and tagline appear.
 4. Tap **Try SponSays without an account** and confirm Do opens directly without onboarding.
 5. Confirm Do shows the idea field, Filters button and coral **SponSays** CTA, with no behaviour selector.
-6. Enter **Hike**, choose a future local date and time plus $$ / 2 people, apply, and request a recommendation.
+6. Enter **Hike**, use the paired vertical wheels to choose a future local date and time plus $$ / 2 people, apply, and request a recommendation.
 7. Confirm the deciding state is followed by one demo recommendation.
 8. Tap **Not this one** and confirm the rejected place is not immediately repeated.
 9. Continue rejecting and confirm up to eight replacements are distinct; if the pool runs out earlier, confirm the app shows calm context-change guidance.
