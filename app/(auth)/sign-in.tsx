@@ -51,7 +51,7 @@ export default function SignInScreen() {
 
     if (action === 'sign-up' && !result.session) {
       setPassword('');
-      setSuccessMessage('Check your email to finish creating your account.');
+      setSuccessMessage('We sent you a confirmation email. Confirm it, then come back and sign in.');
       return;
     }
 

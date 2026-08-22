@@ -1,5 +1,6 @@
 import type { Session } from '@supabase/supabase-js';
 import { isSupabaseAvailable, supabase } from '@/src/services/supabase/client';
+import { mapSignInError, mapSignUpError } from './errorMapping';
 import type { AuthServiceError, AuthSessionResult, AuthSignOutResult } from './types';
 
 const unavailableError: AuthServiceError = {
@@ -59,18 +60,15 @@ export const signInWithEmail = async (email: string, password: string): Promise<
     const { data, error } = await client.auth.signInWithPassword({ email: email.trim(), password });
     if (error) {
       logAuthError('sign-in', error);
-      return emptySessionResult({
-        code: 'invalid_credentials',
-        message: "That email or password doesn't look right.",
-      });
+      return emptySessionResult(mapSignInError(error.code));
     }
 
     return { session: data.session, user: data.user, error: null };
   } catch (error) {
     logUnexpectedAuthError('sign-in', error);
     return emptySessionResult({
-      code: 'invalid_credentials',
-      message: "That email or password doesn't look right.",
+      code: 'sign_in_failed',
+      message: "We couldn't sign you in. Please try again.",
     });
   }
 };
@@ -83,10 +81,7 @@ export const signUpWithEmail = async (email: string, password: string): Promise<
     const { data, error } = await client.auth.signUp({ email: email.trim(), password });
     if (error) {
       logAuthError('sign-up', error);
-      return emptySessionResult({
-        code: 'sign_up_failed',
-        message: "We couldn't create your account. Please try again.",
-      });
+      return emptySessionResult(mapSignUpError(error.code));
     }
 
     return { session: data.session, user: data.user, error: null };

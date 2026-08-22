@@ -3,8 +3,12 @@ import { router } from 'expo-router';
 import { Pressable, ScrollView, StyleSheet, Text, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { PrimaryButton } from '@/src/components/buttons/PrimaryButton';
+import { TextButton } from '@/src/components/buttons/TextButton';
 import { ContextChip } from '@/src/components/chips/ContextChip';
 import { ModeSelector } from '@/src/components/chips/ModeSelector';
+import { useAuth } from '@/src/features/auth/useAuth';
+import { saveMyPreferences } from '@/src/features/profile/preferenceService';
+import { completeMyOnboarding } from '@/src/features/profile/profileService';
 import type { SpontaneityMode } from '@/src/features/recommendations/engine';
 import { colors, spacing, typography } from '@/src/theme';
 
@@ -13,15 +17,47 @@ const SOCIAL_OPTIONS = ['Solo', 'Couple', 'Friends', 'Family'];
 const BUDGETS = ['Free', '$', '$$', '$$$', 'Flexible'];
 
 export default function OnboardingScreen() {
+  const { user } = useAuth();
   const [interests, setInterests] = useState<string[]>(['Outdoors', 'Culture']);
   const [social, setSocial] = useState('Couple');
   const [budget, setBudget] = useState('$$');
   const [mode, setMode] = useState<SpontaneityMode>('spontaneous');
+  const [saving, setSaving] = useState(false);
+  const [saveError, setSaveError] = useState<string>();
 
   const toggleInterest = (interest: string) => {
     setInterests((current) =>
       current.includes(interest) ? current.filter((item) => item !== interest) : [...current, interest],
     );
+  };
+
+  const completeOnboarding = async () => {
+    if (!user) {
+      router.replace('/(tabs)/do');
+      return;
+    }
+
+    setSaving(true);
+    setSaveError(undefined);
+    const [preferencesResult, profileResult] = await Promise.all([
+      saveMyPreferences({
+        interests,
+        dietaryPreferences: [],
+        defaultBudget: budget,
+        defaultDistanceKm: 5,
+        defaultSocialContext: social,
+        defaultSpontaneityMode: mode,
+      }),
+      completeMyOnboarding(),
+    ]);
+    setSaving(false);
+
+    if (preferencesResult.error || profileResult.error) {
+      setSaveError("We couldn't save your profile right now. Try again, or continue without saving.");
+      return;
+    }
+
+    router.replace('/(tabs)/do');
   };
 
   return (
@@ -94,8 +130,25 @@ export default function OnboardingScreen() {
         </View>
 
         <View style={styles.actions}>
-          <PrimaryButton label="LET'S SPONSAY" onPress={() => router.replace('/(tabs)/do')} />
-          <Text style={styles.note}>Try SponSays without creating an account.</Text>
+          <PrimaryButton
+            disabled={saving}
+            label="LET'S SPONSAY"
+            loading={saving}
+            onPress={() => void completeOnboarding()}
+          />
+          {saveError ? (
+            <>
+              <Text accessibilityLiveRegion="polite" style={styles.error}>{saveError}</Text>
+              <TextButton
+                label="Continue without saving"
+                onPress={() => router.replace('/(tabs)/do')}
+              />
+            </>
+          ) : (
+            <Text style={styles.note}>
+              {user ? 'These choices will be saved to your private profile.' : 'Try SponSays without creating an account.'}
+            </Text>
+          )}
         </View>
       </ScrollView>
     </SafeAreaView>
@@ -117,4 +170,5 @@ const styles = StyleSheet.create({
   modeNote: { ...typography.caption, color: colors.charcoalMuted },
   actions: { gap: spacing.sm, paddingTop: spacing.xxl },
   note: { ...typography.caption, color: colors.charcoalMuted, textAlign: 'center' },
+  error: { ...typography.caption, color: colors.danger, textAlign: 'center' },
 });

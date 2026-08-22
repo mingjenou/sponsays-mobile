@@ -10,7 +10,7 @@ Never redesign SponSays into a directory, list-first marketplace, travel browser
 
 ## Current milestone
 
-Milestones 0 and 1 are implemented and physically verified in Expo Go. Task 3A adds an optional Supabase client, Auth boundary, database migration and RLS foundation. The credential-free Adelaide demo remains the default; recommendation persistence is not connected yet.
+Milestones 0 and 1 are implemented and physically verified in Expo Go. Task 3C persists private signed-in activity through the Task 3A Supabase boundary. The credential-free Adelaide demo remains fully operational and never requires an account.
 
 ## Stack and architecture
 
@@ -92,7 +92,10 @@ Supabase Auth will own future identities. Future user tables must reference `aut
 - Demo mode must remain operational without Supabase.
 - Never weaken RLS for debugging.
 - Do not add OpenAI or Google Places yet.
-- Do not persist demo recommendations until connection verification is explicitly authorized.
+- Persist profiles, preferences and recommendation activity only for authenticated users.
+- Demo and signed-out activity must remain local and must not be written to Supabase.
+- Database failures must never block recommendation reveal, replacement, acceptance or directions.
+- Keep large Supabase queries in typed feature services rather than screens.
 
 ## Prohibited scope expansion
 

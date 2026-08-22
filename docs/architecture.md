@@ -87,3 +87,21 @@ Making authentication mandatory or trusting client-side ownership checks would e
 **Future implication**
 
 After a project is linked and the schema is applied, database types should be regenerated with the Supabase CLI. Recommendation persistence remains a separate, explicitly authorized milestone.
+
+## ADR-007 — Non-blocking persistence for signed-in activity
+
+**Decision**
+
+Keep recommendation selection local, then enqueue signed-in persistence behind typed feature services. Client-created UUIDs connect a shown recommendation to its accepted detail route without displaying database identifiers. Demo and signed-out activity remain local.
+
+**Reason**
+
+Recommendation reveal, replacement, acceptance and directions are the core experience and must not wait for the network. RLS remains the authority for ownership even though the client supplies row identifiers.
+
+**Alternative considered**
+
+Blocking navigation until every database write completed was rejected because a slow or offline connection would make the decision flow unusable.
+
+**Future implication**
+
+The local Adelaide provider can later be replaced behind the existing place model without changing persistence ownership or the Option 1A screens.
