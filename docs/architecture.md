@@ -155,3 +155,21 @@ One canonical datetime prevents coarse and exact time values from drifting apart
 **Provider limitation**
 
 Google `openNow` is sent only when the selected time is genuinely near the current device time. A future datetime is context, not proof that a place will be open then. Exact session-datetime persistence and robust future-hours evaluation remain explicit follow-up schema and availability work.
+
+## ADR-011 — Planned lifecycle and nearby exploration
+
+**Decision**
+
+Keep the existing Do, Around Me, Memories and Me tabs. Planned is a first-class stack destination linked from the accepted state, Memories and Me. An accepted recommendation becomes a private `planned_experiences` record at the exact requested datetime; only a completed plan becomes a Memory. Demo plans use device-local storage.
+
+**Calendar and reminders**
+
+Calendar and notification permission requests are contextual button actions. Native APIs are isolated behind small injectable gateways, calendar event IDs prevent duplicate creation, and reminder IDs are cancelled before rescheduling or closing a plan.
+
+**Around Me**
+
+Around Me uses `react-native-maps` with a Google map provider and a separate JWT-protected `discover-nearby` Edge Function backed by Places Nearby Search (New). It caps results at 20 and fetches a moved viewport only after an explicit “Search this area” action. Signed-out exploration uses labelled Adelaide mocks. Google Places records stay normalized as `PlaceCandidate`; the app displays Google Maps attribution and preserves the provider source URL.
+
+**Release gates**
+
+The planned-experience migration and new Edge Function are repository changes only until explicitly reviewed and deployed. Standalone Google-map builds require platform-restricted Maps SDK keys; the existing server Places key remains only in Edge Function secrets. Expo Go needs no additional map setup for physical testing.

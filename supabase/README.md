@@ -14,6 +14,8 @@ The files in `migrations/` are ordered database changes. `20260821_initial_schem
 
 **LIVE MIGRATION REQUIRED BEFORE AUTHENTICATED FEEDBACK TEST:** `20260822_unique_recommendation_feedback.sql`
 
+**LIVE MIGRATION REQUIRED BEFORE AUTHENTICATED PLANNED TEST:** `20260822_planned_experiences.sql`
+
 Keep this release gate explicit until the migration has actually been applied to the target Supabase project. The app upserts feedback with `onConflict: 'user_id,recommendation_id'`; do not mark the migration as deployed based only on the repository file.
 
 When a Supabase project is eventually connected, a developer can apply migrations using the Supabase CLI after reviewing the target project:
@@ -29,6 +31,8 @@ The founder does not need to run these commands for the signed-out demo. A devel
 ## Real-place Edge Function
 
 `functions/discover-places` is an authenticated, database-free proxy for bounded Google Places Text Search (New) requests. JWT verification remains enabled in `config.toml`, and the function independently validates the bearer token, request shape, query, location, radius and candidate count. It uses only `GOOGLE_PLACES_API_KEY` from Supabase Edge Function secrets; the Google key must never enter the mobile environment.
+
+`functions/discover-nearby` follows the same authentication and secret boundary for bounded Google Places Nearby Search (New) requests. It caps results at 20, validates category/type translations, radius and request size, and does not persist browsing coordinates. Repository code does not mean this function is deployed.
 
 See [`docs/google-places-setup.md`](../docs/google-places-setup.md) for founder-friendly Cloud, secret and deployment steps. Code being present in this repository does not mean the function, key, billing or live Google API is configured.
 

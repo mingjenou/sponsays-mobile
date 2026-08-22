@@ -1,2 +1,5 @@
 [functions.discover-places]
 verify_jwt = true
+
+[functions.discover-nearby]
+verify_jwt = true
